@@ -21,7 +21,7 @@ step1:
 	make -C $(BUILD)/$@ VERBOSE=$(VERBOSE) install
 
 step2:
-	make -C $(BUILD)/$@ VERBOSE=1(VERBOSE) install
+	make -C $(BUILD)/$@ VERBOSE=1 install
 
 step3:
 	$(BUILD)/$@/prep3.sh
