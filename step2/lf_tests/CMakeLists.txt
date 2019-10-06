@@ -1,3 +1,5 @@
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg")
 add_executable(burst burst.c)
 target_link_libraries(burst PUBLIC zhpeq_util_fab)
 
