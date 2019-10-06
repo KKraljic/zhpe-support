@@ -1,4 +1,5 @@
-set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-pg")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg")
 add_executable(edgetest edgetest.c)
 target_link_libraries(edgetest PUBLIC zhpeq zhpeq_util)
 
