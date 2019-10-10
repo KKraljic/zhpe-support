@@ -36,7 +36,7 @@
 
 #define _GNU_SOURCE
 #include <search.h>
-
+#include <stdio.h>
 #include <internal.h>
 
 #define NODE_CHUNKS     (128)

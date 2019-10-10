@@ -37,7 +37,7 @@
 #define _GNU_SOURCE
 
 #include <zhpeq_util.h>
-
+#include <stdio.h>
 #include <libgen.h>
 
 const char              *appname;
@@ -782,6 +782,7 @@ int _do_getpeername(const char *callf, uint line,
 int _sock_send_blob(const char *callf, uint line, int fd,
                     const void *blob, size_t blob_len)
 {
+    printf("Within function: %s in file %s \n", __func__, __FILE__);
     int                 ret = -EINVAL;
     uint32_t            wlen = blob_len;
     size_t              req;
@@ -811,6 +812,7 @@ int _sock_send_blob(const char *callf, uint line, int fd,
 int _sock_recv_fixed_blob(const char *callf, uint line,
                           int sock_fd, void *blob, size_t blob_len)
 {
+    printf("Within function: %s in file %s \n", __func__, __FILE__);
     int                 ret;
     uint32_t            wlen;
     size_t              req;
@@ -841,6 +843,8 @@ int _sock_recv_var_blob(const char *callf, uint line,
                         int sock_fd, size_t extra_len,
                         void **blob, size_t *blob_len)
 {
+    printf("Within function: %s in file %s \n", __func__, __FILE__);
+
     int                 ret;
     uint32_t            wlen;
     size_t              req;
