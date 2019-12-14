@@ -39,7 +39,7 @@
 
 #include <zhpeq.h>
 #include <zhpeq_util.h>
-#include <zhpe.h>
+#include <zhpe_offloaded.h>
 #include <zhpe_offloaded_stats.h>
 
 #include <assert.h>
