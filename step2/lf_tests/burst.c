@@ -591,8 +591,8 @@ static void usage(bool help)
         " -r : use RDM endpoints\n"
         " -w <ops> : number of warmup operations\n"
         "If provider is zhpe, uses ASIC backend unless environment variable\n"
-        "ZHPE_BACKEND_LIBFABRIC_PROV is set.\n"
-        "ZHPE_BACKEND_LIBFABRIC_DOM can be used to set a specific domain\n",
+        "ZHPE_OFFLOADED_BACKEND_LIBFABRIC_PROV is set.\n"
+        "ZHPE_OFFLOADED_BACKEND_LIBFABRIC_DOM can be used to set a specific domain\n",
         appname);
 
     if (help) {

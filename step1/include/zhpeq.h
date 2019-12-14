@@ -42,79 +42,79 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include <zhpe_uapi.h>
+#include <zhpe_offloaded_uapi.h>
 
 _EXTERN_C_BEG
 
 #define ZHPEQ_API_VERSION       (1)
 
-#define ZHPEQ_MR_GET            ZHPE_MR_GET
-#define ZHPEQ_MR_PUT            ZHPE_MR_PUT
-#define ZHPEQ_MR_SEND           ZHPE_MR_SEND
-#define ZHPEQ_MR_RECV           ZHPE_MR_RECV
-#define ZHPEQ_MR_GET_REMOTE     ZHPE_MR_GET_REMOTE
-#define ZHPEQ_MR_PUT_REMOTE     ZHPE_MR_PUT_REMOTE
+#define ZHPEQ_MR_GET            ZHPE_OFFLOADED_MR_GET
+#define ZHPEQ_MR_PUT            ZHPE_OFFLOADED_MR_PUT
+#define ZHPEQ_MR_SEND           ZHPE_OFFLOADED_MR_SEND
+#define ZHPEQ_MR_RECV           ZHPE_OFFLOADED_MR_RECV
+#define ZHPEQ_MR_GET_REMOTE     ZHPE_OFFLOADED_MR_GET_REMOTE
+#define ZHPEQ_MR_PUT_REMOTE     ZHPE_OFFLOADED_MR_PUT_REMOTE
 
-#define ZHPEQ_MR_KEY_ZERO_OFF   ZHPE_MR_FLAG0
-#define ZHPEQ_MR_FLAG1          ZHPE_MR_FLAG1
-#define ZHPEQ_MR_FLAG2          ZHPE_MR_FLAG2
-#define ZHPEQ_MR_FLAG3          ZHPE_MR_FLAG3
+#define ZHPEQ_MR_KEY_ZERO_OFF   ZHPE_OFFLOADED_MR_FLAG0
+#define ZHPEQ_MR_FLAG1          ZHPE_OFFLOADED_MR_FLAG1
+#define ZHPEQ_MR_FLAG2          ZHPE_OFFLOADED_MR_FLAG2
+#define ZHPEQ_MR_FLAG3          ZHPE_OFFLOADED_MR_FLAG3
 
 enum zhpeq_atomic_size {
-    ZHPEQ_ATOMIC_SIZE32         = ZHPE_HW_ATOMIC_SIZE_32,
-    ZHPEQ_ATOMIC_SIZE64         = ZHPE_HW_ATOMIC_SIZE_64,
+    ZHPEQ_ATOMIC_SIZE32         = ZHPE_OFFLOADED_HW_ATOMIC_SIZE_32,
+    ZHPEQ_ATOMIC_SIZE64         = ZHPE_OFFLOADED_HW_ATOMIC_SIZE_64,
 };
 
 enum zhpeq_atomic_op {
-    ZHPEQ_ATOMIC_SWAP           = ZHPE_HW_OPCODE_ATM_SWAP,
-    ZHPEQ_ATOMIC_ADD            = ZHPE_HW_OPCODE_ATM_ADD,
-    ZHPEQ_ATOMIC_AND            = ZHPE_HW_OPCODE_ATM_AND,
-    ZHPEQ_ATOMIC_OR             = ZHPE_HW_OPCODE_ATM_OR,
-    ZHPEQ_ATOMIC_XOR            = ZHPE_HW_OPCODE_ATM_XOR,
-    ZHPEQ_ATOMIC_SMIN           = ZHPE_HW_OPCODE_ATM_SMIN,
-    ZHPEQ_ATOMIC_SMAX           = ZHPE_HW_OPCODE_ATM_SMAX,
-    ZHPEQ_ATOMIC_UMIN           = ZHPE_HW_OPCODE_ATM_UMIN,
-    ZHPEQ_ATOMIC_UMAX           = ZHPE_HW_OPCODE_ATM_UMAX,
-    ZHPEQ_ATOMIC_CAS            = ZHPE_HW_OPCODE_ATM_CAS,
+    ZHPEQ_ATOMIC_SWAP           = ZHPE_OFFLOADED_HW_OPCODE_ATM_SWAP,
+    ZHPEQ_ATOMIC_ADD            = ZHPE_OFFLOADED_HW_OPCODE_ATM_ADD,
+    ZHPEQ_ATOMIC_AND            = ZHPE_OFFLOADED_HW_OPCODE_ATM_AND,
+    ZHPEQ_ATOMIC_OR             = ZHPE_OFFLOADED_HW_OPCODE_ATM_OR,
+    ZHPEQ_ATOMIC_XOR            = ZHPE_OFFLOADED_HW_OPCODE_ATM_XOR,
+    ZHPEQ_ATOMIC_SMIN           = ZHPE_OFFLOADED_HW_OPCODE_ATM_SMIN,
+    ZHPEQ_ATOMIC_SMAX           = ZHPE_OFFLOADED_HW_OPCODE_ATM_SMAX,
+    ZHPEQ_ATOMIC_UMIN           = ZHPE_OFFLOADED_HW_OPCODE_ATM_UMIN,
+    ZHPEQ_ATOMIC_UMAX           = ZHPE_OFFLOADED_HW_OPCODE_ATM_UMAX,
+    ZHPEQ_ATOMIC_CAS            = ZHPE_OFFLOADED_HW_OPCODE_ATM_CAS,
 };
 
 union zhpeq_atomic {
-    union zhpe_atomic   z;
+    union zhpe_offloaded_atomic   z;
 };
 
-#define ZHPEQ_CQ_STATUS_SUCCESS ZHPE_HW_CQ_STATUS_SUCCESS
+#define ZHPEQ_CQ_STATUS_SUCCESS ZHPE_OFFLOADED_HW_CQ_STATUS_SUCCESS
 #define ZHPEQ_CQ_STATUS_CMD_TRUNCATED \
-    ZHPE_HW_CQ_STATUS_TRUNCATED
-#define ZHPEQ_CQ_STATUS_BAD_CMD ZHPE_HW_CQ_STATUS_BAD_CMD
+    ZHPE_OFFLOADED_HW_CQ_STATUS_TRUNCATED
+#define ZHPEQ_CQ_STATUS_BAD_CMD ZHPE_OFFLOADED_HW_CQ_STATUS_BAD_CMD
 #define ZHPEQ_CQ_STATUS_LOCAL_UNRECOVERABLE \
-    ZHPE_HW_CQ_STATUS_LOCAL_UNRECOVERABLE
+    ZHPE_OFFLOADED_HW_CQ_STATUS_LOCAL_UNRECOVERABLE
 #define ZHPEQ_CQ_STATUS_FABRIC_UNRECOVERABLE \
-    ZHPE_HW_CQ_STATUS_FABRIC_UNRECOVERABLE
+    ZHPE_OFFLOADED_HW_CQ_STATUS_FABRIC_UNRECOVERABLE
 #define ZHPEQ_CQ_STATUS_FABRIC_NO_RESOURCES \
-    ZHPE_HW_CQ_STATUS_FABRIC_NO_RESOURCES
+    ZHPE_OFFLOADED_HW_CQ_STATUS_FABRIC_NO_RESOURCES
 #define ZHPEQ_CQ_STATUS_FABRIC_ACCESS \
-    ZHPE_HW_CQ_STATUS_FABRIC_ACCESS
+    ZHPE_OFFLOADED_HW_CQ_STATUS_FABRIC_ACCESS
 
 enum zhpeq_backend {
-    ZHPEQ_BACKEND_ZHPE          = ZHPE_BACKEND_ZHPE,
-    ZHPEQ_BACKEND_LIBFABRIC     = ZHPE_BACKEND_LIBFABRIC,
-    ZHPEQ_BACKEND_MAX           = ZHPE_BACKEND_MAX,
+    ZHPEQ_BACKEND_ZHPE          = ZHPE_OFFLOADED_BACKEND_ZHPE,
+    ZHPEQ_BACKEND_LIBFABRIC     = ZHPE_OFFLOADED_BACKEND_LIBFABRIC,
+    ZHPEQ_BACKEND_MAX           = ZHPE_OFFLOADED_BACKEND_MAX,
 };
 
 enum {
     ZHPEQ_PRI_MAX               = 1,
     ZHPEQ_TC_MAX                = 15,
-    ZHPEQ_IMM_MAX               = ZHPE_IMM_MAX,
+    ZHPEQ_IMM_MAX               = ZHPE_OFFLOADED_IMM_MAX,
     ZHPEQ_KEY_BLOB_MAX          = 32,
 };
 
 struct zhpeq_attr {
     enum zhpeq_backend  backend;
-    struct zhpe_attr    z;
+    struct zhpe_offloaded_attr    z;
 };
 
 struct zhpeq_key_data {
-    struct zhpe_key_data z;
+    struct zhpe_offloaded_key_data z;
     union {
         uint64_t        laddr;
         uint64_t        rsp_zaddr;
@@ -122,7 +122,7 @@ struct zhpeq_key_data {
 };
 
 struct zhpeq_cq_entry {
-    struct zhpe_cq_entry z;
+    struct zhpe_offloaded_cq_entry z;
 };
 
 /* Forward references to shut the compiler up. */
@@ -133,7 +133,7 @@ static inline int zhpeq_rem_key_access(struct zhpeq_key_data *qkdata,
                                        uint64_t start, uint64_t len,
                                        uint32_t qaccess, uint64_t *zaddr)
 {
-    struct zhpe_key_data *kdata = &qkdata->z;
+    struct zhpe_offloaded_key_data *kdata = &qkdata->z;
 
     if (!qkdata)
         return -EINVAL;
@@ -152,7 +152,7 @@ static inline int zhpeq_lcl_key_access(struct zhpeq_key_data *qkdata,
                                        uint32_t qaccess, uint64_t *zaddr)
 {
     uintptr_t           start = (uintptr_t)buf;
-    struct zhpe_key_data *kdata = &qkdata->z;
+    struct zhpe_offloaded_key_data *kdata = &qkdata->z;
 
     if (!qkdata)
         return -EINVAL;

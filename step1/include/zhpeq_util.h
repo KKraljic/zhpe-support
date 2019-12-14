@@ -64,7 +64,7 @@
 
 #include <uuid/uuid.h>
 
-#include <zhpe_externc.h>
+#include <zhpe_offloaded_externc.h>
 
 _EXTERN_C_BEG
 
@@ -110,13 +110,13 @@ extern size_t           page_size;
 
 /* Borrow AF_APPLETALK since it should never be seen. */
 #define AF_ZHPE         AF_APPLETALK
-#define ZHPE_ADDRSTRLEN (37)
-#define ZHPE_QUEUEINVAL (~(uint32_t)0)
+#define ZHPE_OFFLOADED_ADDRSTRLEN (37)
+#define ZHPE_OFFLOADED_QUEUEINVAL (~(uint32_t)0)
 
-#define ZHPE_SA_TYPE_SHIFT      (24)
-#define ZHPE_SA_XID_MASK        ((1U << ZHPE_SA_TYPE_SHIFT) - 1)
-#define ZHPE_SA_TYPE_MASK       (0xFFU << ZHPE_SA_TYPE_SHIFT)
-#define ZHPE_SA_TYPE_FAM        (1U << ZHPE_SA_TYPE_SHIFT)
+#define ZHPE_OFFLOADED_SA_TYPE_SHIFT      (24)
+#define ZHPE_OFFLOADED_SA_XID_MASK        ((1U << ZHPE_OFFLOADED_SA_TYPE_SHIFT) - 1)
+#define ZHPE_OFFLOADED_SA_TYPE_MASK       (0xFFU << ZHPE_OFFLOADED_SA_TYPE_SHIFT)
+#define ZHPE_OFFLOADED_SA_TYPE_FAM        (1U << ZHPE_OFFLOADED_SA_TYPE_SHIFT)
 
 struct sockaddr_zhpe {
     sa_family_t         sz_family;
@@ -663,7 +663,7 @@ static inline void sockaddr_6to4(void *addr)
     return;
 }
 
-static_assert(INET6_ADDRSTRLEN >= ZHPE_ADDRSTRLEN, "ZHPE_ADDRSTRLEN");
+static_assert(INET6_ADDRSTRLEN >= ZHPE_OFFLOADED_ADDRSTRLEN, "ZHPE_OFFLOADED_ADDRSTRLEN");
 
 const char *sockaddr_ntop(const void *addr, char *buf, size_t len);
 

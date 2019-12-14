@@ -40,7 +40,7 @@
 #include <zhpeq.h>
 #include <zhpeq_util.h>
 #include <zhpe.h>
-#include <zhpe_stats.h>
+#include <zhpe_offloaded_stats.h>
 
 #include <assert.h>
 #include <endian.h>
@@ -92,9 +92,9 @@ struct backend_ops {
 
 extern uuid_t           zhpeq_uuid;
 
-void zhpeq_register_backend(enum zhpe_backend backend, struct backend_ops *ops);
+void zhpeq_register_backend(enum zhpe_offloaded_backend backend, struct backend_ops *ops);
 void zhpeq_backend_libfabric_init(int fd);
-void zhpeq_backend_zhpe_init(int fd);
+void zhpeq_backend_zhpe_offloaded_init(int fd);
 
 #define FREE_END        ((intptr_t)-1)
 
@@ -114,10 +114,10 @@ struct zhpeq_dom {
 
 struct zhpeq {
     struct zhpeq_dom    *zdom;
-    struct zhpe_xqinfo  xqinfo;
+    struct zhpe_offloaded_xqinfo  xqinfo;
     volatile void       *qcm;
-    union zhpe_hw_wq_entry *wq;
-    union zhpe_hw_cq_entry *cq;
+    union zhpe_offloaded_hw_wq_entry *wq;
+    union zhpe_offloaded_hw_cq_entry *cq;
     void                **context;
     void                *backend_data;
     int                 fd;
@@ -128,7 +128,7 @@ struct zhpeq {
 
 static inline uint8_t cq_valid(uint32_t idx, uint32_t qmask)
 {
-    return ((idx & (qmask + 1)) ? 0 : ZHPE_HW_CQ_VALID);
+    return ((idx & (qmask + 1)) ? 0 : ZHPE_OFFLOADED_HW_CQ_VALID);
 }
 
 static inline uint64_t ioread64(const volatile void *addr)
@@ -152,7 +152,7 @@ static inline void pack_kdata(const struct zhpeq_key_data *qkdata,
                               struct key_data_packed *pdata,
                               uint64_t zaddr)
 {
-    const struct zhpe_key_data *kdata = &qkdata->z;
+    const struct zhpe_offloaded_key_data *kdata = &qkdata->z;
 
     pdata->vaddr = be64toh(kdata->vaddr);
     pdata->zaddr = be64toh(zaddr);
@@ -163,7 +163,7 @@ static inline void pack_kdata(const struct zhpeq_key_data *qkdata,
 static inline void unpack_kdata(const struct key_data_packed *pdata,
                                 struct zhpeq_key_data *qkdata)
 {
-    struct zhpe_key_data *kdata = &qkdata->z;
+    struct zhpe_offloaded_key_data *kdata = &qkdata->z;
 
     kdata->vaddr = htobe64(pdata->vaddr);
     kdata->zaddr = htobe64(pdata->zaddr);
@@ -193,17 +193,17 @@ union zhpeq_mr_desc {
 
 /* FIXME: probably works for now, but ditch bit fields. */
 union xdm_cmp_tail {
-    struct zhpe_xdm_cmpl_queue_tail_toggle bits;
+    struct zhpe_offloaded_xdm_cmpl_queue_tail_toggle bits;
     uint64_t            u64;
 };
 
 union xdm_active {
-    struct zhpe_xdm_active_status_error bits;
+    struct zhpe_offloaded_xdm_active_status_error bits;
     uint64_t            u64;
 };
 
 union rdm_rcv_tail {
-    struct zhpe_rdm_rcv_queue_tail_toggle bits;
+    struct zhpe_offloaded_rdm_rcv_queue_tail_toggle bits;
     uint64_t            u64;
 };
 

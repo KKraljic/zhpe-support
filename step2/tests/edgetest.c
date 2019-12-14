@@ -803,8 +803,8 @@ static void usage(bool help)
         " -s : stop on first error\n"
         " -v : verbose: print a line for each loop\n"
         "Uses ASIC backend unless environment variable\n"
-        "ZHPE_BACKEND_LIBFABRIC_PROV is set.\n"
-        "ZHPE_BACKEND_LIBFABRIC_DOM can be used to set a specific domain\n",
+        "ZHPE_OFFLOADED_BACKEND_LIBFABRIC_PROV is set.\n"
+        "ZHPE_OFFLOADED_BACKEND_LIBFABRIC_DOM can be used to set a specific domain\n",
         appname);
 
     if (help)

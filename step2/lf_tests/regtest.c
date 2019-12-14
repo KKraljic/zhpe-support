@@ -36,7 +36,7 @@
 
 #include <sys/mman.h>
 
-#include <zhpe_stats.h>
+#include <zhpe_offloaded_stats.h>
 #include <zhpeq_util_fab.h>
 
 struct args {
@@ -75,7 +75,7 @@ static int do_reg(const struct args *args)
 
     for (size = args->start_size, steps = 0; steps < args->steps;
          size <<= 1, steps++) {
-        zhpe_stats_stamp(0, size);
+        zhpe_offloaded_stats_stamp(0, size);
         /* Warmups, local+remote. */
         for (i = 0; i < 10; i++) {
             ret = fi_mr_reg(fab_dom.domain, buf, buf_size, lcl_acc | rem_acc,
@@ -87,21 +87,21 @@ static int do_reg(const struct args *args)
             fi_close(&mr->fid);
         }
         /* Gathering statistics, local+remote. */
-        zhpe_stats_enable();
+        zhpe_offloaded_stats_enable();
         for (i = 0; i < args->iterations; i++)  {
-            zhpe_stats_start(10);
+            zhpe_offloaded_stats_start(10);
             ret = fi_mr_reg(fab_dom.domain, buf, size, lcl_acc | rem_acc,
                             0, 0, 0, &mr, NULL);
-            zhpe_stats_stop(10);
+            zhpe_offloaded_stats_stop(10);
             if (ret < 0) {
                 print_func_fi_err(__func__, __LINE__, "fi_mr_reg", "", ret);
                 goto done;
             }
-            zhpe_stats_start(20);
+            zhpe_offloaded_stats_start(20);
             fi_close(&mr->fid);
-            zhpe_stats_stop(20);
+            zhpe_offloaded_stats_stop(20);
         }
-        zhpe_stats_disable();
+        zhpe_offloaded_stats_disable();
         /* Warmups, local only. */
         for (i = 0; i < 10; i++) {
             ret = fi_mr_reg(fab_dom.domain, buf, buf_size, lcl_acc,
@@ -113,21 +113,21 @@ static int do_reg(const struct args *args)
             fi_close(&mr->fid);
         }
         /* Gathering statistics, local only. */
-        zhpe_stats_enable();
+        zhpe_offloaded_stats_enable();
         for (i = 0; i < args->iterations; i++)  {
-            zhpe_stats_start(30);
+            zhpe_offloaded_stats_start(30);
             ret = fi_mr_reg(fab_dom.domain, buf, size, lcl_acc,
                             0, 0, 0, &mr, NULL);
-            zhpe_stats_stop(30);
+            zhpe_offloaded_stats_stop(30);
             if (ret < 0) {
                 print_func_fi_err(__func__, __LINE__, "fi_mr_reg", "", ret);
                 goto done;
             }
-            zhpe_stats_start(40);
+            zhpe_offloaded_stats_start(40);
             fi_close(&mr->fid);
-            zhpe_stats_stop(40);
+            zhpe_offloaded_stats_stop(40);
         }
-        zhpe_stats_disable();
+        zhpe_offloaded_stats_disable();
     }
  done:
     if (buf)
@@ -165,9 +165,9 @@ int main(int argc, char **argv)
 
     zhpeq_util_init(argv[0], LOG_INFO, false);
 
-    zhpe_stats_init("/tmp", "reg");
-    zhpe_stats_test(0);
-    zhpe_stats_open(1);
+    zhpe_offloaded_stats_init("/tmp", "reg");
+    zhpe_offloaded_stats_test(0);
+    zhpe_offloaded_stats_open(1);
 
     if (argc != 4)
         usage(true);
@@ -188,9 +188,9 @@ int main(int argc, char **argv)
     ret = 0;
  done:
 
-    zhpe_stats_stop_all();
-    zhpe_stats_close();
-    zhpe_stats_finalize();
+    zhpe_offloaded_stats_stop_all();
+    zhpe_offloaded_stats_close();
+    zhpe_offloaded_stats_finalize();
 
     return ret;
 }

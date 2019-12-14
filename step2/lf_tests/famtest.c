@@ -94,7 +94,7 @@ static int do_fam(const struct args *args)
     size_t              tx_op = 0;
     size_t              tx_cmp = 0;
     size_t              sa_len;
-    struct fi_zhpe_ext_ops_v1 *ext_ops;
+    struct fi_zhpe_offloaded_ext_ops_v1 *ext_ops;
     size_t              i;
     size_t              off;
     uint64_t            *v;
@@ -120,10 +120,10 @@ static int do_fam(const struct args *args)
     v = (void *)fab_conn->mrmem.mem;
 
     /* This is where it gets new. */
-    ret = fi_open_ops(&fab_dom->fabric->fid, FI_ZHPE_OPS_V1, 0,
+    ret = fi_open_ops(&fab_dom->fabric->fid, FI_ZHPE_OFFLOADED_OPS_V1, 0,
                       (void **)&ext_ops, NULL);
     if (ret < 0) {
-        print_func_err(__func__, __LINE__, "fi_open_ops", FI_ZHPE_OPS_V1, ret);
+        print_func_err(__func__, __LINE__, "fi_open_ops", FI_ZHPE_OFFLOADED_OPS_V1, ret);
         goto done;
     }
     for (i = 0; i < args->nfams; i++) {
@@ -152,7 +152,7 @@ static int do_fam(const struct args *args)
             for (;;) {
                 ret = fi_write(fab_conn->ep, &v[i], sizeof(v[i]),
                                fi_mr_desc(fab_conn->mrmem.mr), fam_addr[i],
-                               off, FI_ZHPE_FAM_RKEY, NULL);
+                               off, FI_ZHPE_OFFLOADED_FAM_RKEY, NULL);
                 if (ret >= 0)
                     break;
                 if (ret != -FI_EAGAIN) {
@@ -171,7 +171,7 @@ static int do_fam(const struct args *args)
             for (;;) {
                 ret = fi_read(fab_conn->ep, &v[i], sizeof(v[i]),
                               fi_mr_desc(fab_conn->mrmem.mr), fam_addr[i],
-                               off, FI_ZHPE_FAM_RKEY, NULL);
+                               off, FI_ZHPE_OFFLOADED_FAM_RKEY, NULL);
                 if (ret >= 0)
                     break;
                 if (ret != -FI_EAGAIN) {
