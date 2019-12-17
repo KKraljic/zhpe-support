@@ -103,7 +103,7 @@ struct context {
     struct zhpe_offloaded_result  *result;
     uint16_t            cmp_index;
     uint8_t             result_len;
-#if ZHPE_IO_RECORD
+#if ZHPE_OFFLOADED_IO_RECORD
     bool                done;
 #endif
 };
@@ -194,9 +194,9 @@ static void cq_update(void *arg, void *vcqe, bool err);
 static int stuff_free(struct stuff *stuff);
 static inline void cq_write(void *vcontext, int status);
 
-#ifdef ZHPE_IO_RECORD
+#ifdef ZHPE_OFFLOADED_IO_RECORD
 
-static struct io_record io_rec[ZHPE_IO_RECORD] __attribute__((used));
+static struct io_record io_rec[ZHPE_OFFLOADED_IO_RECORD] __attribute__((used));
 static uint32_t         io_rec_idx;
 
 static void
@@ -580,13 +580,13 @@ static int lfab_qalloc(struct zhpeq *zq, int cmd_qlen, int cmp_qlen,
     zq->fd = -1;
     /* Use xqinfo for compatiblity with asic code. */
     zq->xqinfo.qcm.size =
-        roundup64(ZHPE_XDM_QCM_CMPL_QUEUE_TAIL_TOGGLE_OFFSET + 8, page_size);
+        roundup64(ZHPE_OFFLOADED_XDM_QCM_CMPL_QUEUE_TAIL_TOGGLE_OFFSET + 8, page_size);
     zq->xqinfo.qcm.off = 0;
     zq->xqinfo.cmdq.ent = cmd_qlen;
-    zq->xqinfo.cmdq.size = roundup64(cmd_qlen * ZHPE_ENTRY_LEN, page_size);
+    zq->xqinfo.cmdq.size = roundup64(cmd_qlen * ZHPE_OFFLOADED_ENTRY_LEN, page_size);
     zq->xqinfo.cmdq.off = 0;
     zq->xqinfo.cmplq.ent = cmp_qlen;
-    zq->xqinfo.cmplq.size = roundup64(cmp_qlen * ZHPE_ENTRY_LEN, page_size);
+    zq->xqinfo.cmplq.size = roundup64(cmp_qlen * ZHPE_OFFLOADED_ENTRY_LEN, page_size);
     zq->xqinfo.cmplq.off = 0;
 
     return 0;
@@ -761,7 +761,7 @@ static inline void cq_write(void *vcontext, int status)
     cqe->entry.valid = cq_valid(conn->cq_tail, qmask);
     conn->cq_tail++;
     iowrite64(conn->cq_tail & qmask,
-              zq->qcm + ZHPE_XDM_QCM_CMPL_QUEUE_TAIL_TOGGLE_OFFSET);
+              zq->qcm + ZHPE_OFFLOADED_XDM_QCM_CMPL_QUEUE_TAIL_TOGGLE_OFFSET);
  done:
     /* Place context on free list. */
     STAILQ_INSERT_TAIL(&context->fab_plus->context_free,
