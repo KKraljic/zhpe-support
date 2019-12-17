@@ -36,7 +36,7 @@
 
 #include <zhpeq_util_fab.h>
 
-#include <rdma/fi_ext_zhpe.h>
+#include <rdma/fi_ext_zhpe_offloaded.h>
 
 struct args {
     uint64_t            nfams;
