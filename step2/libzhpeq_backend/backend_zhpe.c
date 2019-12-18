@@ -772,7 +772,7 @@ struct backend_ops ops = {
     .qkdata_id_str      = zhpe_offloaded_qkdata_id_str,
 };
 
-void zhpeq_backend_zhpe_init(int fd)
+void zhpeq_backend_zhpe_offloaded_init(int fd)
 {
     if (fd == -1)
         return;
