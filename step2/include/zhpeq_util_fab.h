@@ -50,6 +50,10 @@
 #include <rdma/fi_tagged.h>
 #include <rdma/fi_trigger.h>
 
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#endif
+
 _EXTERN_C_BEG
 
 #define FAB_FIVERSION       FI_VERSION(1, 5)
