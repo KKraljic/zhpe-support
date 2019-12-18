@@ -79,8 +79,6 @@ _EXTERN_C_BEG
     ((_type *)((char *)(_ptr) - offsetof(_type, _field)))
 #endif
 
-#define ARRAY_SIZE(_x)  (sizeof(_x) / sizeof(_x[0]))
-
 #define TO_PTR(_int)    (void *)(uintptr_t)(_int)
 
 #define FREE_IF(_ptr,_free)                                     \
