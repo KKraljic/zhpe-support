@@ -39,6 +39,10 @@
 
 #include <sys/queue.h>
 
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#endif
+
 #define BACKLOG         (10)
 #ifdef DEBUG
 #define TIMEOUT         (-1)
