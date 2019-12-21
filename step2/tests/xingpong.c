@@ -39,6 +39,10 @@
 
 #include <sys/queue.h>
 
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#endif
+
 #define BACKLOG         (10)
 #ifdef DEBUG
 #define TIMEOUT         (-1)
@@ -980,8 +984,8 @@ static void usage(bool help)
         " -u : uni-directional client-to-server traffic (no copy)\n"
         " -w <ops> : number of warmup operations\n"
         "Uses ASIC backend unless environment variable\n"
-        "ZHPE_BACKEND_LIBFABRIC_PROV is set.\n"
-        "ZHPE_BACKEND_LIBFABRIC_DOM can be used to set a specific domain\n",
+        "ZHPE_OFFLOADED_BACKEND_LIBFABRIC_PROV is set.\n"
+        "ZHPE_OFFLOADED_BACKEND_LIBFABRIC_DOM can be used to set a specific domain\n",
         appname);
 
     if (help)

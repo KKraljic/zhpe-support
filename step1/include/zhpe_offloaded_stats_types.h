@@ -34,42 +34,42 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _ZHPE_STATS_TYPES_H_
-#define _ZHPE_STATS_TYPES_H_
+#ifndef _ZHPE_OFFLOADED_STATS_TYPES_H_
+#define _ZHPE_OFFLOADED_STATS_TYPES_H_
 
 #include <stdbool.h>
 #include <stdint.h>
 
-#include <zhpe_externc.h>
+#include <zhpe_offloaded_externc.h>
 
 _EXTERN_C_BEG
 
-struct zhpe_stats_ops {
+struct zhpe_offloaded_stats_ops {
     void                (*open)(uint16_t uid);
     void                (*close)(void);
     void                (*enable)(void);
     void                (*disable)(void);
-    struct zhpe_stats   *(*stop_counters)(void);
-    void                (*stop_all)(struct zhpe_stats *stats);
-    void                (*pause_all)(struct zhpe_stats *stats);
+    struct zhpe_offloaded_stats   *(*stop_counters)(void);
+    void                (*stop_all)(struct zhpe_offloaded_stats *stats);
+    void                (*pause_all)(struct zhpe_offloaded_stats *stats);
     void                (*restart_all)(void);
-    void                (*start)(struct zhpe_stats *stats, uint32_t subid);
-    void                (*stop)(struct zhpe_stats *stats, uint32_t subid);
-    void                (*pause)(struct zhpe_stats * stats, uint32_t subid);
+    void                (*start)(struct zhpe_offloaded_stats *stats, uint32_t subid);
+    void                (*stop)(struct zhpe_offloaded_stats *stats, uint32_t subid);
+    void                (*pause)(struct zhpe_offloaded_stats * stats, uint32_t subid);
     void                (*finalize)(void);
     void                (*key_destructor)(void *vstats);
-    void                (*stamp)(struct zhpe_stats *stats, uint32_t subid,
+    void                (*stamp)(struct zhpe_offloaded_stats *stats, uint32_t subid,
                                  uint32_t items, uint64_t *data);
 };
 
 enum {
-    ZHPE_STATS_SUBID_SEND = 10,
-    ZHPE_STATS_SUBID_RECV = 20,
-    ZHPE_STATS_SUBID_RMA  = 30,
-    ZHPE_STATS_SUBID_ZHPQ = 40,
-    ZHPE_STATS_SUBID_MPI  = 50,
+    ZHPE_OFFLOADED_STATS_SUBID_SEND = 10,
+    ZHPE_OFFLOADED_STATS_SUBID_RECV = 20,
+    ZHPE_OFFLOADED_STATS_SUBID_RMA  = 30,
+    ZHPE_OFFLOADED_STATS_SUBID_ZHPQ = 40,
+    ZHPE_OFFLOADED_STATS_SUBID_MPI  = 50,
 };
 
 _EXTERN_C_END
 
-#endif /* _ZHPE_STATS_TYPES_H_ */
+#endif /* _ZHPE_OFFLOADED_STATS_TYPES_H_ */

@@ -85,7 +85,7 @@ static bool pages_ok(const char *label, volatile void *ptr, size_t off,
     return ret;
 }
 
-static int qcm_ok(volatile void *qcm, struct zhpe_xqinfo *info, size_t i,
+static int qcm_ok(volatile void *qcm, struct zhpe_offloaded_xqinfo *info, size_t i,
                   bool zhpe, bool zero)
 {
     bool                ret = false;
@@ -169,7 +169,7 @@ static int qcm_ok(volatile void *qcm, struct zhpe_xqinfo *info, size_t i,
 }
 
 static bool queue_ok(const char *label, volatile void *ptr,
-                     struct zhpe_queue *q, bool zero)
+                     struct zhpe_offloaded_queue *q, bool zero)
 {
     return pages_ok(label, ptr, q->off, q->size, zero);
 }
@@ -210,11 +210,11 @@ int main(int argc, char **argv)
     if (argc == 1)
         usage(true);
 
-    if (!expected_saw("sizeof(wq_entry)", ZHPE_HW_ENTRY_LEN,
-                      sizeof(union zhpe_hw_wq_entry)))
+    if (!expected_saw("sizeof(wq_entry)", ZHPE_OFFLOADED_HW_ENTRY_LEN,
+                      sizeof(union zhpe_offloaded_hw_wq_entry)))
         goto done;
-    if (!expected_saw("sizeof(cq_entry)", ZHPE_HW_ENTRY_LEN,
-                      sizeof(union zhpe_hw_cq_entry)))
+    if (!expected_saw("sizeof(cq_entry)", ZHPE_OFFLOADED_HW_ENTRY_LEN,
+                      sizeof(union zhpe_offloaded_hw_cq_entry)))
         goto done;
 
     while ((opt = getopt(argc, argv, "s:")) != -1) {

@@ -39,10 +39,10 @@
 #include <dlfcn.h>
 #include <limits.h>
 
-static_assert(sizeof(union zhpe_hw_wq_entry) ==  ZHPE_ENTRY_LEN,
-              "zhpe_hw_wq_entry");
-static_assert(sizeof(union zhpe_hw_cq_entry) ==  ZHPE_ENTRY_LEN,
-              "zhpe_hw_cq_entry");
+static_assert(sizeof(union zhpe_offloaded_hw_wq_entry) ==  ZHPE_OFFLOADED_ENTRY_LEN,
+              "zhpe_offloaded_hw_wq_entry");
+static_assert(sizeof(union zhpe_offloaded_hw_cq_entry) ==  ZHPE_OFFLOADED_ENTRY_LEN,
+              "zhpe_offloaded_hw_cq_entry");
 
 /* Set to 1 to dump qkdata when registered/exported/imported/freed. */
 #define QKDATA_DUMP     (0)
@@ -68,7 +68,7 @@ static void __attribute__((constructor)) lib_init(void)
     }
 }
 
-void zhpeq_register_backend(enum zhpe_backend backend, struct backend_ops *ops)
+void zhpeq_register_backend(enum zhpe_offloaded_backend backend, struct backend_ops *ops)
 {
     /* For the moment, the zhpe backend will only register if the zhpe device
      * can be opened and the libfabric backend will only register if the zhpe
@@ -181,10 +181,10 @@ int zhpeq_free(struct zhpeq *zq)
     if (!zq)
         goto done;
     /* Stop the queue. */
-    iowrite64(1, zq->qcm + ZHPE_XDM_QCM_STOP_OFFSET);
+    iowrite64(1, zq->qcm + ZHPE_OFFLOADED_XDM_QCM_STOP_OFFSET);
     for (;;) {
         active.u64 =
-            ioread64(zq->qcm + ZHPE_XDM_QCM_ACTIVE_STATUS_ERROR_OFFSET);
+            ioread64(zq->qcm + ZHPE_OFFLOADED_XDM_QCM_ACTIVE_STATUS_ERROR_OFFSET);
         if (!active.bits.active)
             break;
         sched_yield();
@@ -285,12 +285,12 @@ int zhpeq_alloc(struct zhpeq_dom *zdom, int cmd_qlen, int cmp_qlen,
     }
 
     /* Initialize completion tail to zero and set toggle bit. */
-    iowrite64(tail.u64, zq->qcm + ZHPE_XDM_QCM_CMPL_QUEUE_TAIL_TOGGLE_OFFSET);
+    iowrite64(tail.u64, zq->qcm + ZHPE_OFFLOADED_XDM_QCM_CMPL_QUEUE_TAIL_TOGGLE_OFFSET);
     /* Intialize command head and tail to zero. */
-    iowrite64(0, zq->qcm + ZHPE_XDM_QCM_CMD_QUEUE_HEAD_OFFSET);
-    iowrite64(0, zq->qcm + ZHPE_XDM_QCM_CMD_QUEUE_TAIL_OFFSET);
+    iowrite64(0, zq->qcm + ZHPE_OFFLOADED_XDM_QCM_CMD_QUEUE_HEAD_OFFSET);
+    iowrite64(0, zq->qcm + ZHPE_OFFLOADED_XDM_QCM_CMD_QUEUE_TAIL_OFFSET);
     /* Start the queue. */
-    iowrite64(0, zq->qcm + ZHPE_XDM_QCM_STOP_OFFSET);
+    iowrite64(0, zq->qcm + ZHPE_OFFLOADED_XDM_QCM_STOP_OFFSET);
     ret = 0;
 
  done:
@@ -386,18 +386,18 @@ int zhpeq_commit(struct zhpeq *zq, uint32_t qindex, uint32_t n_entries)
 
     qmask = zq->xqinfo.cmdq.ent - 1;
 
-#ifdef HAVE_ZHPE_STATS
-    zhpe_stats_pause_all();
+#ifdef HAVE_ZHPE_OFFLOADED_STATS
+    zhpe_offloaded_stats_pause_all();
     uint32_t            i;
-    union zhpe_hw_wq_entry *wqe;
+    union zhpe_offloaded_hw_wq_entry *wqe;
 
     for (i = 0; i < n_entries; i++) {
         wqe = zq->wq + ((qindex + i) & qmask);
-        zhpe_stats_stamp(zhpe_stats_subid(ZHPQ, 60), (uintptr_t)zq,
+        zhpe_offloaded_stats_stamp(zhpe_offloaded_stats_subid(ZHPQ, 60), (uintptr_t)zq,
                          wqe->hdr.cmp_index,
                          (uintptr_t)zq->context[wqe->hdr.cmp_index]);
     }
-    zhpe_stats_restart_all();
+    zhpe_offloaded_stats_restart_all();
 #endif
 
     old = atm_load_rlx(&zq->tail_commit);
@@ -408,7 +408,7 @@ int zhpeq_commit(struct zhpeq *zq, uint32_t qindex, uint32_t n_entries)
     new = old + n_entries;
     io_wmb();
     iowrite64(new & qmask,
-              zq->qcm + ZHPE_XDM_QCM_CMD_QUEUE_TAIL_OFFSET);
+              zq->qcm + ZHPE_OFFLOADED_XDM_QCM_CMD_QUEUE_TAIL_OFFSET);
     io_wmb();
     atm_store_rlx(&zq->tail_commit, new);
     ret = 0;
@@ -422,7 +422,7 @@ int zhpeq_signal(struct zhpeq *zq)
     return b_ops->wq_signal(zq);
 }
 
-static inline void set_context(struct zhpeq *zq, union zhpe_hw_wq_entry *wqe,
+static inline void set_context(struct zhpeq *zq, union zhpe_offloaded_hw_wq_entry *wqe,
                                void *context)
 {
     struct free_index   old;
@@ -444,7 +444,7 @@ static inline void set_context(struct zhpeq *zq, union zhpe_hw_wq_entry *wqe,
     wqe->hdr.cmp_index = old.index;
 }
 
-static inline void *get_context(struct zhpeq *zq, struct zhpe_cq_entry *cqe)
+static inline void *get_context(struct zhpeq *zq, struct zhpe_offloaded_cq_entry *cqe)
 {
     void                *ret = zq->context[cqe->index];
     struct free_index   old;
@@ -465,7 +465,7 @@ int zhpeq_nop(struct zhpeq *zq, uint32_t qindex, bool fence,
               void *context)
 {
     int                 ret = -EINVAL;
-    union zhpe_hw_wq_entry *wqe;
+    union zhpe_offloaded_hw_wq_entry *wqe;
 
     if (!zq)
         goto done;
@@ -475,7 +475,7 @@ int zhpeq_nop(struct zhpeq *zq, uint32_t qindex, bool fence,
     qindex = qindex & (zq->xqinfo.cmdq.ent - 1);
     wqe = zq->wq + qindex;
 
-    wqe->hdr.opcode = ZHPE_HW_OPCODE_NOP;
+    wqe->hdr.opcode = ZHPE_OFFLOADED_HW_OPCODE_NOP;
     set_context(zq, wqe, context);
 
     ret = 0;
@@ -489,7 +489,7 @@ static inline int zhpeq_rw(struct zhpeq *zq, uint32_t qindex, bool fence,
                            void *context, uint16_t opcode)
 {
     int                 ret = -EINVAL;
-    union zhpe_hw_wq_entry *wqe;
+    union zhpe_offloaded_hw_wq_entry *wqe;
 
     if (!zq)
         goto done;
@@ -499,7 +499,7 @@ static inline int zhpeq_rw(struct zhpeq *zq, uint32_t qindex, bool fence,
     qindex = qindex & (zq->xqinfo.cmdq.ent - 1);
     wqe = zq->wq + qindex;
 
-    opcode |= (fence ? ZHPE_HW_OPCODE_FENCE : 0);
+    opcode |= (fence ? ZHPE_OFFLOADED_HW_OPCODE_FENCE : 0);
     wqe->hdr.opcode = opcode;
     set_context(zq, wqe, context);
     wqe->dma.len = len;
@@ -516,7 +516,7 @@ int zhpeq_put(struct zhpeq *zq, uint32_t qindex, bool fence,
               void *context)
 {
     return zhpeq_rw(zq, qindex, fence, lcl_addr, len, rem_addr, context,
-                    ZHPE_HW_OPCODE_PUT);
+                    ZHPE_OFFLOADED_HW_OPCODE_PUT);
 }
 
 int zhpeq_puti(struct zhpeq *zq, uint32_t qindex, bool fence,
@@ -524,7 +524,7 @@ int zhpeq_puti(struct zhpeq *zq, uint32_t qindex, bool fence,
                void *context)
 {
     int                 ret = -EINVAL;
-    union zhpe_hw_wq_entry *wqe;
+    union zhpe_offloaded_hw_wq_entry *wqe;
 
     if (!zq)
         goto done;
@@ -534,8 +534,8 @@ int zhpeq_puti(struct zhpeq *zq, uint32_t qindex, bool fence,
     qindex = qindex & (zq->xqinfo.cmdq.ent - 1);
     wqe = zq->wq + qindex;
 
-    wqe->hdr.opcode = ZHPE_HW_OPCODE_PUTIMM;
-    wqe->hdr.opcode |= (fence ? ZHPE_HW_OPCODE_FENCE : 0);
+    wqe->hdr.opcode = ZHPE_OFFLOADED_HW_OPCODE_PUTIMM;
+    wqe->hdr.opcode |= (fence ? ZHPE_OFFLOADED_HW_OPCODE_FENCE : 0);
     set_context(zq, wqe, context);
     wqe->imm.len = len;
     wqe->imm.rem_addr = remote_addr;
@@ -552,14 +552,14 @@ int zhpeq_get(struct zhpeq *zq, uint32_t qindex, bool fence,
               void *context)
 {
     return zhpeq_rw(zq, qindex, fence, rem_addr, len, lcl_addr, context,
-                    ZHPE_HW_OPCODE_GET);
+                    ZHPE_OFFLOADED_HW_OPCODE_GET);
 }
 
 int zhpeq_geti(struct zhpeq *zq, uint32_t qindex, bool fence,
                size_t len, uint64_t remote_addr, void *context)
 {
     int                 ret = -EINVAL;
-    union zhpe_hw_wq_entry *wqe;
+    union zhpe_offloaded_hw_wq_entry *wqe;
 
     if (!zq)
         goto done;
@@ -569,8 +569,8 @@ int zhpeq_geti(struct zhpeq *zq, uint32_t qindex, bool fence,
     qindex = qindex & (zq->xqinfo.cmdq.ent - 1);
     wqe = zq->wq + qindex;
 
-    wqe->hdr.opcode = ZHPE_HW_OPCODE_GETIMM;
-    wqe->hdr.opcode |= (fence ? ZHPE_HW_OPCODE_FENCE : 0);
+    wqe->hdr.opcode = ZHPE_OFFLOADED_HW_OPCODE_GETIMM;
+    wqe->hdr.opcode |= (fence ? ZHPE_OFFLOADED_HW_OPCODE_FENCE : 0);
     set_context(zq, wqe, context);
     wqe->imm.len = len;
     wqe->imm.rem_addr = remote_addr;
@@ -586,7 +586,7 @@ int zhpeq_atomic(struct zhpeq *zq, uint32_t qindex, bool fence, bool retval,
                  void *context)
 {
     int                 ret = -EINVAL;
-    union zhpe_hw_wq_entry *wqe;
+    union zhpe_offloaded_hw_wq_entry *wqe;
     size_t              n_operands;
 
     if (!zq)
@@ -597,23 +597,23 @@ int zhpeq_atomic(struct zhpeq *zq, uint32_t qindex, bool fence, bool retval,
     qindex = qindex & (zq->xqinfo.cmdq.ent - 1);
     wqe = zq->wq + qindex;
 
-    wqe->hdr.opcode = (fence ? ZHPE_HW_OPCODE_FENCE : 0);
+    wqe->hdr.opcode = (fence ? ZHPE_OFFLOADED_HW_OPCODE_FENCE : 0);
     set_context(zq, wqe, context);
 
     switch (op) {
 
     case ZHPEQ_ATOMIC_ADD:
-        wqe->hdr.opcode |= ZHPE_HW_OPCODE_ATM_ADD;
+        wqe->hdr.opcode |= ZHPE_OFFLOADED_HW_OPCODE_ATM_ADD;
         n_operands = 1;
         break;
 
     case ZHPEQ_ATOMIC_CAS:
-        wqe->hdr.opcode |= ZHPE_HW_OPCODE_ATM_CAS;
+        wqe->hdr.opcode |= ZHPE_OFFLOADED_HW_OPCODE_ATM_CAS;
         n_operands = 2;
         break;
 
     case ZHPEQ_ATOMIC_SWAP:
-        wqe->hdr.opcode |= ZHPE_HW_OPCODE_ATM_SWAP;
+        wqe->hdr.opcode |= ZHPE_OFFLOADED_HW_OPCODE_ATM_SWAP;
         n_operands = 1;
         break;
 
@@ -621,16 +621,16 @@ int zhpeq_atomic(struct zhpeq *zq, uint32_t qindex, bool fence, bool retval,
         goto done;
     }
 
-    wqe->atm.size = (retval ? ZHPE_HW_ATOMIC_RETURN : 0);
+    wqe->atm.size = (retval ? ZHPE_OFFLOADED_HW_ATOMIC_RETURN : 0);
 
     switch (datasize) {
 
     case ZHPEQ_ATOMIC_SIZE32:
-        wqe->atm.size |= ZHPE_HW_ATOMIC_SIZE_32;
+        wqe->atm.size |= ZHPE_OFFLOADED_HW_ATOMIC_SIZE_32;
         break;
 
     case ZHPEQ_ATOMIC_SIZE64:
-        wqe->atm.size |= ZHPE_HW_ATOMIC_SIZE_64;
+        wqe->atm.size |= ZHPE_OFFLOADED_HW_ATOMIC_SIZE_64;
         break;
 
     default:
@@ -651,7 +651,7 @@ int zhpeq_atomic(struct zhpeq *zq, uint32_t qindex, bool fence, bool retval,
 int zhpeq_mr_reg(struct zhpeq_dom *zdom, const void *buf, size_t len,
                  uint32_t access, struct zhpeq_key_data **qkdata_out)
 {
-    zhpe_stats_start(zhpe_stats_subid(ZHPQ, 0));
+    zhpe_offloaded_stats_start(zhpe_offloaded_stats_subid(ZHPQ, 0));
 
     int                 ret = -EINVAL;
 
@@ -668,14 +668,14 @@ int zhpeq_mr_reg(struct zhpeq_dom *zdom, const void *buf, size_t len,
 #endif
 
  done:
-    zhpe_stats_stop(zhpe_stats_subid(ZHPQ, 0));
+    zhpe_offloaded_stats_stop(zhpe_offloaded_stats_subid(ZHPQ, 0));
 
     return ret;
 }
 
 int zhpeq_mr_free(struct zhpeq_dom *zdom, struct zhpeq_key_data *qkdata)
 {
-    zhpe_stats_start(zhpe_stats_subid(ZHPQ, 10));
+    zhpe_offloaded_stats_start(zhpe_offloaded_stats_subid(ZHPQ, 10));
 
     int                 ret = 0;
 
@@ -691,7 +691,7 @@ int zhpeq_mr_free(struct zhpeq_dom *zdom, struct zhpeq_key_data *qkdata)
     ret = b_ops->mr_free(zdom, qkdata);
 
  done:
-    zhpe_stats_stop(zhpe_stats_subid(ZHPQ, 10));
+    zhpe_offloaded_stats_stop(zhpe_offloaded_stats_subid(ZHPQ, 10));
 
     return ret;
 }
@@ -700,7 +700,7 @@ int zhpeq_zmmu_import(struct zhpeq_dom *zdom, int open_idx, const void *blob,
                       size_t blob_len, bool cpu_visible,
                       struct zhpeq_key_data **qkdata_out)
 {
-    zhpe_stats_start(zhpe_stats_subid(ZHPQ, 40));
+    zhpe_offloaded_stats_start(zhpe_offloaded_stats_subid(ZHPQ, 40));
 
     int                 ret = -EINVAL;
 
@@ -718,7 +718,7 @@ int zhpeq_zmmu_import(struct zhpeq_dom *zdom, int open_idx, const void *blob,
 #endif
 
  done:
-    zhpe_stats_stop(zhpe_stats_subid(ZHPQ, 40));
+    zhpe_offloaded_stats_stop(zhpe_offloaded_stats_subid(ZHPQ, 40));
 
     return ret;
 }
@@ -728,7 +728,7 @@ int zhpeq_zmmu_fam_import(struct zhpeq_dom *zdom, int open_idx,
 {
     int                 ret = -EINVAL;
 
-    zhpe_stats_start(zhpe_stats_subid(ZHPQ, 20));
+    zhpe_offloaded_stats_start(zhpe_offloaded_stats_subid(ZHPQ, 20));
 
     if (!qkdata_out)
         goto done;
@@ -747,7 +747,7 @@ int zhpeq_zmmu_fam_import(struct zhpeq_dom *zdom, int open_idx,
 #endif
 
  done:
-    zhpe_stats_stop(zhpe_stats_subid(ZHPQ, 20));
+    zhpe_offloaded_stats_stop(zhpe_offloaded_stats_subid(ZHPQ, 20));
 
     return ret;
 }
@@ -756,7 +756,7 @@ int zhpeq_zmmu_export(struct zhpeq_dom *zdom,
                       const struct zhpeq_key_data *qkdata,
                       void *blob, size_t *blob_len)
 {
-    zhpe_stats_start(zhpe_stats_subid(ZHPQ, 30));
+    zhpe_offloaded_stats_start(zhpe_offloaded_stats_subid(ZHPQ, 30));
 
     int                 ret = -EINVAL;
     struct zhpeq_mr_desc_v1 *desc = container_of(qkdata,
@@ -764,7 +764,7 @@ int zhpeq_zmmu_export(struct zhpeq_dom *zdom,
                                                  qkdata);
 
     if (!zdom || !qkdata || !blob || !blob_len ||
-        desc->hdr.magic != ZHPE_MAGIC || desc->hdr.version != ZHPEQ_MR_V1)
+        desc->hdr.magic != ZHPE_OFFLOADED_MAGIC || desc->hdr.version != ZHPEQ_MR_V1)
         goto done;
 
 #if QKDATA_DUMP
@@ -773,7 +773,7 @@ int zhpeq_zmmu_export(struct zhpeq_dom *zdom,
     ret = b_ops->zmmu_export(zdom, qkdata, blob, blob_len);
 
  done:
-    zhpe_stats_stop(zhpe_stats_subid(ZHPQ, 30));
+    zhpe_offloaded_stats_stop(zhpe_offloaded_stats_subid(ZHPQ, 30));
 
     return ret;
 }
@@ -782,7 +782,7 @@ int zhpeq_zmmu_free(struct zhpeq_dom *zdom, struct zhpeq_key_data *qkdata)
 {
     int                 ret = 0;
 
-    zhpe_stats_start(zhpe_stats_subid(ZHPQ, 50));
+    zhpe_offloaded_stats_start(zhpe_offloaded_stats_subid(ZHPQ, 50));
 
     if (!qkdata)
         goto done;
@@ -796,7 +796,7 @@ int zhpeq_zmmu_free(struct zhpeq_dom *zdom, struct zhpeq_key_data *qkdata)
     ret = b_ops->zmmu_free(zdom, qkdata);
 
  done:
-    zhpe_stats_stop(zhpe_stats_subid(ZHPQ, 50));
+    zhpe_offloaded_stats_stop(zhpe_offloaded_stats_subid(ZHPQ, 50));
 
     return ret;
 }
@@ -806,7 +806,7 @@ ssize_t zhpeq_cq_read(struct zhpeq *zq, struct zhpeq_cq_entry *entries,
 {
     ssize_t             ret = -EINVAL;
     bool                polled = false;
-    union zhpe_hw_cq_entry *cqe;
+    union zhpe_offloaded_hw_cq_entry *cqe;
     ssize_t             i;
     uint32_t            qmask;
     uint32_t            old;
@@ -819,11 +819,11 @@ ssize_t zhpeq_cq_read(struct zhpeq *zq, struct zhpeq_cq_entry *entries,
 
     for (i = 0, old = atm_load_rlx(&zq->head_tail.head) ; i < n_entries ;) {
         cqe = zq->cq + (old & qmask);
-        if ((atm_load_rlx((uint8_t *)cqe) & ZHPE_HW_CQ_VALID) !=
+        if ((atm_load_rlx((uint8_t *)cqe) & ZHPE_OFFLOADED_HW_CQ_VALID) !=
              cq_valid(old, qmask)) {
             if (i > 0 || !b_ops->cq_poll || polled) {
                 if (i == 0)
-                    zhpe_stats_stamp(zhpe_stats_subid(ZHPQ, 70), (uintptr_t)zq);
+                    zhpe_offloaded_stats_stamp(zhpe_offloaded_stats_subid(ZHPQ, 70), (uintptr_t)zq);
                 break;
             }
             ret = b_ops->cq_poll(zq, n_entries);
@@ -837,7 +837,7 @@ ssize_t zhpeq_cq_read(struct zhpeq *zq, struct zhpeq_cq_entry *entries,
         if (!atm_cmpxchg(&zq->head_tail.head, &old, new))
             continue;
         entries[i].z.context = get_context(zq, &entries[i].z);
-        zhpe_stats_stamp(zhpe_stats_subid(ZHPQ, 80), (uintptr_t)zq,
+        zhpe_offloaded_stats_stamp(zhpe_offloaded_stats_subid(ZHPQ, 80), (uintptr_t)zq,
                          entries[i].z.index, (uintptr_t)entries[i].z.context);
         old = new;
         i++;
@@ -851,7 +851,7 @@ ssize_t zhpeq_cq_read(struct zhpeq *zq, struct zhpeq_cq_entry *entries,
 void zhpeq_print_info(struct zhpeq *zq)
 {
     const char          *b_str = "unknown";
-    struct zhpe_attr    *attr = &b_attr.z;
+    struct zhpe_offloaded_attr    *attr = &b_attr.z;
 
     switch (b_attr.backend) {
 

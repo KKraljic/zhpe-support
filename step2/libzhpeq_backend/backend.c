@@ -49,7 +49,7 @@ static void __attribute__((constructor)) backend_lib_init(void)
     }
 
     zhpeq_backend_libfabric_init(fd);
-    zhpeq_backend_zhpe_init(fd);
+    zhpeq_backend_zhpe_offloaded_init(fd);
 
     if (fd != -1)
         close(fd);

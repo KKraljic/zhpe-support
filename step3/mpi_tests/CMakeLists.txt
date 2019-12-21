@@ -21,6 +21,6 @@ target_link_libraries(
 add_executable(mpi_send mpi_send.c)
 set_target_properties(mpi_send PROPERTIES LINK_FLAGS ${MPI_C_LINK_FLAGS})
 target_link_libraries(
-  mpi_send PUBLIC fabric zhpe_stats zhpeq_util ${MPI_C_LIBRARIES})
+  mpi_send PUBLIC fabric zhpe_offloaded_stats zhpeq_util ${MPI_C_LIBRARIES})
 
 install(TARGETS mpi_lf_threads mpi_send DESTINATION libexec)

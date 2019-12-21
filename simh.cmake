@@ -1,5 +1,5 @@
 add_library(simh INTERFACE)
 if (SIMH)
   target_include_directories(simh INTERFACE ${SIMH})
-  target_compile_definitions(simh INTERFACE -DHAVE_ZHPE_SIM -DHAVE_ZHPE_STATS)
+  target_compile_definitions(simh INTERFACE -DHAVE_ZHPE_OFFLOADED_SIM -DHAVE_ZHPE_OFFLOADED_STATS)
 endif (SIMH)

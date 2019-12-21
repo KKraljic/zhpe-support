@@ -17,7 +17,7 @@ Do CMake configuration.
  -l <path>  : path to likwid install 
  -o <opts>  : add C compiler options (defines or optimization)
  -s <path>  : path to simulator headers 
- -z         : enable zhpe_stats (-l and -z probably not compatible)
+ -z         : enable zhpe_offloaded_stats (-l and -z probably not compatible)
 EOF
     exit 1
 }
