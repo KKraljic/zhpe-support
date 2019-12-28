@@ -100,7 +100,7 @@ struct context {
     };
     struct fab_conn_plus *fab_plus;
     struct stuff        *conn;
-    struct zhpe_result  *result;
+    struct zhpe_offloaded_result  *result;
     uint16_t            cmp_index;
     uint8_t             result_len;
 #if ZHPE_IO_RECORD
@@ -179,7 +179,7 @@ struct fab_conn_plus {
     struct context      *context;
     size_t              context_entries;
     struct stailq_head  context_free;
-    struct zhpe_result  *results;
+    struct zhpe_offloaded_result  *results;
     struct fid_mr       *results_mr;
     void                *results_desc;
 };
@@ -734,7 +734,7 @@ static inline void cq_write(void *vcontext, int status)
     struct stuff        *conn;
     struct zhpeq        *zq;
     uint32_t            qmask;
-    union zhpe_hw_cq_entry *cqe;
+    union zhpe_offloaded_hw_cq_entry *cqe;
 
     record_io_done(context);
 
@@ -800,7 +800,7 @@ static bool lfab_zq(struct stuff *conn)
     uint16_t            qmask = zq->xqinfo.cmdq.ent - 1;
     uint16_t            wq_head;
     uint16_t            wq_tail;
-    union zhpe_hw_wq_entry *wqe;
+    union zhpe_offloaded_hw_wq_entry *wqe;
     ssize_t             rc;
     uint64_t            laddr;
     uint64_t            raddr;
@@ -810,9 +810,9 @@ static bool lfab_zq(struct stuff *conn)
     char                *sendbuf;
     struct stailq_entry *stailq_entry;
 
-    wq_head = ioread64(zq->qcm + ZHPE_XDM_QCM_CMD_QUEUE_HEAD_OFFSET) & qmask;
+    wq_head = ioread64(zq->qcm + ZHPE_OFFLOADED_XDM_QCM_CMD_QUEUE_HEAD_OFFSET) & qmask;
     smp_rmb();
-    wq_tail = ioread64(zq->qcm + ZHPE_XDM_QCM_CMD_QUEUE_TAIL_OFFSET) & qmask;
+    wq_tail = ioread64(zq->qcm + ZHPE_OFFLOADED_XDM_QCM_CMD_QUEUE_TAIL_OFFSET) & qmask;
     for (; wq_head != wq_tail; wq_head = (wq_head + 1) & qmask) {
 
         wqe = zq->wq + wq_head;
@@ -828,7 +828,7 @@ static bool lfab_zq(struct stuff *conn)
          * care.
          */
         flags = 0;
-        if (wqe->hdr.opcode & ZHPE_HW_OPCODE_FENCE) {
+        if (wqe->hdr.opcode & ZHPE_OFFLOADED_HW_OPCODE_FENCE) {
             flags = FI_FENCE;
             /* Wait for all outstanding operations to complete. */
             if (conn->tx_queued != conn->tx_completed) {
@@ -848,13 +848,13 @@ static bool lfab_zq(struct stuff *conn)
 
         conn->tx_queued++;
 
-        switch (wqe->hdr.opcode & ~ZHPE_HW_OPCODE_FENCE) {
+        switch (wqe->hdr.opcode & ~ZHPE_OFFLOADED_HW_OPCODE_FENCE) {
 
-        case ZHPE_HW_OPCODE_NOP:
+        case ZHPE_OFFLOADED_HW_OPCODE_NOP:
             cq_write(context, 0);
             break;
 
-        case ZHPE_HW_OPCODE_PUT:
+        case ZHPE_OFFLOADED_HW_OPCODE_PUT:
             conn->msg.context = context;
             laddr = wqe->dma.rd_addr;
             mr = lcl_mr[TO_KEYIDX(laddr)];
@@ -888,7 +888,7 @@ static bool lfab_zq(struct stuff *conn)
             }
             break;
 
-        case ZHPE_HW_OPCODE_GET:
+        case ZHPE_OFFLOADED_HW_OPCODE_GET:
             conn->msg.context = context;
             laddr = wqe->dma.wr_addr;
             mr = lcl_mr[TO_KEYIDX(laddr)];
@@ -922,7 +922,7 @@ static bool lfab_zq(struct stuff *conn)
             }
             break;
 
-        case ZHPE_HW_OPCODE_PUTIMM:
+        case ZHPE_OFFLOADED_HW_OPCODE_PUTIMM:
             conn->msg.context = context;
             /* No NULL descriptors! Use results buffer for sent data. */
             sendbuf = context->result->data;
@@ -953,7 +953,7 @@ static bool lfab_zq(struct stuff *conn)
             }
             break;
 
-        case ZHPE_HW_OPCODE_GETIMM:
+        case ZHPE_OFFLOADED_HW_OPCODE_GETIMM:
             conn->msg.context = context;
             /* Return data in local results buffer. */
             context->result_len = wqe->imm.len;
@@ -983,15 +983,15 @@ static bool lfab_zq(struct stuff *conn)
             }
             break;
 
-        case ZHPE_HW_OPCODE_ATM_ADD:
-        case ZHPE_HW_OPCODE_ATM_CAS:
+        case ZHPE_OFFLOADED_HW_OPCODE_ATM_ADD:
+        case ZHPE_OFFLOADED_HW_OPCODE_ATM_CAS:
             conn->atm_msg.context = context;
             /* Return data in local results buffer.
              * No NULL descriptors! Use results buffer for sent data, too.
              */
             sendbuf = context->result->data;
-            if ((wqe->atm.size & ZHPE_HW_ATOMIC_SIZE_MASK) ==
-                ZHPE_HW_ATOMIC_SIZE_64) {
+            if ((wqe->atm.size & ZHPE_OFFLOADED_HW_ATOMIC_SIZE_MASK) ==
+                ZHPE_OFFLOADED_HW_ATOMIC_SIZE_64) {
                 conn->atm_msg.datatype = FI_UINT64;
                 context->result_len = sizeof(uint64_t);
             } else {
@@ -1009,8 +1009,8 @@ static bool lfab_zq(struct stuff *conn)
             conn->atm_rma_ioc.addr = TO_ADDR(raddr);
             conn->atm_rma_ioc.key = bdom->rkey[TO_KEYIDX(raddr)].rkey;
             conn->atm_msg.addr = bdom->rkey[TO_KEYIDX(raddr)].av_idx;
-            if ((wqe->hdr.opcode & ~ZHPE_HW_OPCODE_FENCE) !=
-                ZHPE_HW_OPCODE_ATM_ADD) {
+            if ((wqe->hdr.opcode & ~ZHPE_OFFLOADED_HW_OPCODE_FENCE) !=
+                ZHPE_OFFLOADED_HW_OPCODE_ATM_ADD) {
                 conn->atm_msg.op = FI_CSWAP;
                 rc = fi_compare_atomicmsg(fab_conn->ep, &conn->atm_msg,
                                           &conn->atm_cmp_ioc, &conn->ldsc, 1,
@@ -1052,7 +1052,7 @@ static bool lfab_zq(struct stuff *conn)
     (void)fab_completions(fab_conn->tx_cq, 0, cq_update, zq);
 
  done:
-    iowrite64(wq_head, zq->qcm + ZHPE_XDM_QCM_CMD_QUEUE_HEAD_OFFSET);
+    iowrite64(wq_head, zq->qcm + ZHPE_OFFLOADED_XDM_QCM_CMD_QUEUE_HEAD_OFFSET);
     /* FIXME: Problematic: orderly shutdown handshake needed in libfabric.
      * Key revocation needs to be skipped. Must deal with outstanding
      * av processing.
@@ -1112,7 +1112,7 @@ static void *lfab_eng_thread(void *veng)
 
 static int lfab_lib_init(struct zhpeq_attr *attr)
 {
-    attr->backend = ZHPE_BACKEND_LIBFABRIC;
+    attr->backend = ZHPE_OFFLOADED_BACKEND_LIBFABRIC;
     attr->z.max_tx_queues = (1U << 10);
     attr->z.max_rx_queues = (1U << 10);
     attr->z.max_tx_qlen   = (1U << 16) - 1;
@@ -1251,7 +1251,7 @@ static int lfab_mr_reg(struct zhpeq_dom *zdom,
             break;
     }
     bdom->lcl_mr[index] = mr;
-    desc->hdr.magic = ZHPE_MAGIC;
+    desc->hdr.magic = ZHPE_OFFLOADED_MAGIC;
     desc->hdr.version = ZHPEQ_MR_V1;
     desc->qkdata.z.vaddr = (uintptr_t)buf;
     desc->qkdata.z.len = len;
@@ -1282,7 +1282,7 @@ static int lfab_mr_free(struct zhpeq_dom *zdom, struct zhpeq_key_data *qkdata)
                                                  qkdata);
     uint32_t            index = TO_KEYIDX(qkdata->z.zaddr);
 
-    if (desc->hdr.magic != ZHPE_MAGIC || desc->hdr.version != ZHPEQ_MR_V1)
+    if (desc->hdr.magic != ZHPE_OFFLOADED_MAGIC || desc->hdr.version != ZHPEQ_MR_V1)
         goto done;
 
     ret = lfab_eng_work_queue(&eng, worker_fi_close, &bdom->lcl_mr[index]->fid);
@@ -1326,7 +1326,7 @@ static int lfab_zmmu_import(struct zhpeq_dom *zdom, int open_idx,
     desc = malloc(sizeof(*desc));
     if (!desc)
         goto done;
-    desc->hdr.magic = ZHPE_MAGIC;
+    desc->hdr.magic = ZHPE_OFFLOADED_MAGIC;
     desc->hdr.version = ZHPEQ_MR_V1 | ZHPEQ_MR_REMOTE;
     unpack_kdata(pdata, &desc->qkdata);
 
@@ -1363,7 +1363,7 @@ static int lfab_zmmu_free(struct zhpeq_dom *zdom, struct zhpeq_key_data *qkdata)
                                                  qkdata);
     uint32_t            index = TO_KEYIDX(qkdata->z.zaddr);
 
-    if (desc->hdr.magic != ZHPE_MAGIC ||
+    if (desc->hdr.magic != ZHPE_OFFLOADED_MAGIC ||
         desc->hdr.version != (ZHPEQ_MR_V1 | ZHPEQ_MR_REMOTE))
         goto done;
 
@@ -1464,12 +1464,12 @@ static struct backend_ops ops = {
 
 void zhpeq_backend_libfabric_init(int fd)
 {
-    backend_prov = getenv("ZHPE_BACKEND_LIBFABRIC_PROV");
-    backend_dom = getenv("ZHPE_BACKEND_LIBFABRIC_DOM");
-    eng.do_auto = !!getenv("ZHPE_BACKEND_LIBFABRIC_AUTO");
+    backend_prov = getenv("ZHPE_OFFLOADED_BACKEND_LIBFABRIC_PROV");
+    backend_dom = getenv("ZHPE_OFFLOADED_BACKEND_LIBFABRIC_DOM");
+    eng.do_auto = !!getenv("ZHPE_OFFLOADED_BACKEND_LIBFABRIC_AUTO");
 
     if (fd != -1)
         return;
 
-    zhpeq_register_backend(ZHPE_BACKEND_LIBFABRIC, &ops);
+    zhpeq_register_backend(ZHPE_OFFLOADED_BACKEND_LIBFABRIC, &ops);
 }

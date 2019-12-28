@@ -38,7 +38,7 @@
 
 #include <zhpeq_util.h>
 
-#include <zhpe_stats.h>
+#include <zhpe_offloaded_stats.h>
 
 int main(int argc, char **argv)
 {
@@ -58,13 +58,13 @@ int main(int argc, char **argv)
     }
 
     if (argc == 5) {
-        zhpe_stats_init(argv[3], argv[4]);
-        zhpe_stats_test(0);
-        zhpe_stats_open(1);
-        zhpe_stats_enable();
-        zhpe_stats_start(0);
-        zhpe_stats_start(10);
-        zhpe_stats_disable();
+        zhpe_offloaded_stats_init(argv[3], argv[4]);
+        zhpe_offloaded_stats_test(0);
+        zhpe_offloaded_stats_open(1);
+        zhpe_offloaded_stats_enable();
+        zhpe_offloaded_stats_start(0);
+        zhpe_offloaded_stats_start(10);
+        zhpe_offloaded_stats_disable();
     }
 
     if (MPI_Init(&argc, &argv) != MPI_SUCCESS)
@@ -92,10 +92,10 @@ int main(int argc, char **argv)
         goto done;
     }
 
-    zhpe_stats_enable();
-    zhpe_stats_stop(10);
-    zhpe_stats_start(20);
-    zhpe_stats_disable();
+    zhpe_offloaded_stats_enable();
+    zhpe_offloaded_stats_stop(10);
+    zhpe_offloaded_stats_start(20);
+    zhpe_offloaded_stats_disable();
 
     if (!n_rank) {
         if (n_proc != 2) {
@@ -104,20 +104,20 @@ int main(int argc, char **argv)
         }
         printf("loops %Lu size %Lu\n", (ullong)loops, (ullong)size);
 
-        zhpe_stats_enable();
+        zhpe_offloaded_stats_enable();
         for (i = 0; i < loops; i++) {
-            zhpe_stats_start(100);
+            zhpe_offloaded_stats_start(100);
             if (MPI_Send(buf, size, MPI_BYTE, 1, 0, MPI_COMM_WORLD)
                 != MPI_SUCCESS)
                 goto done;
-            zhpe_stats_stop(100);
-            zhpe_stats_start(110);
+            zhpe_offloaded_stats_stop(100);
+            zhpe_offloaded_stats_start(110);
             if (MPI_Recv(buf, size, MPI_BYTE, 1, 0, MPI_COMM_WORLD,
                          MPI_STATUS_IGNORE) != MPI_SUCCESS)
                 goto done;
-            zhpe_stats_stop(110);
+            zhpe_offloaded_stats_stop(110);
         }
-        zhpe_stats_disable();
+        zhpe_offloaded_stats_disable();
         MPI_Barrier(MPI_COMM_WORLD);
     }
     else {
@@ -133,10 +133,10 @@ int main(int argc, char **argv)
     }
     ret = 0;
 
-    zhpe_stats_enable();
-    zhpe_stats_stop(20);
-    zhpe_stats_start(30);
-    zhpe_stats_disable();
+    zhpe_offloaded_stats_enable();
+    zhpe_offloaded_stats_stop(20);
+    zhpe_offloaded_stats_start(30);
+    zhpe_offloaded_stats_disable();
 
  done:
     if (buf)
@@ -145,10 +145,10 @@ int main(int argc, char **argv)
     if (ret)
         fprintf(stderr, "error\n");
 
-    zhpe_stats_enable();
-    zhpe_stats_stop_all();
-    zhpe_stats_close();
-    zhpe_stats_finalize();
+    zhpe_offloaded_stats_enable();
+    zhpe_offloaded_stats_stop_all();
+    zhpe_offloaded_stats_close();
+    zhpe_offloaded_stats_finalize();
 
     return ret;
 }

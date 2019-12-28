@@ -40,7 +40,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include <zhpe_stats_types.h>
+#include "zhpe_offloaded_stats_types.h"
 
 _EXTERN_C_BEG
 

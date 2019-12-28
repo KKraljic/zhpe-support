@@ -57,8 +57,8 @@ struct dev_mr_tree_entry {
     int32_t             use_count;
 };
 
-static struct zhpe_global_shared_data *shared_global;
-static struct zhpe_local_shared_data *shared_local;
+static struct zhpe_offloaded_global_shared_data *shared_global;
+static struct zhpe_offloaded_local_shared_data *shared_local;
 
 struct zdom_data {
     pthread_mutex_t     node_mutex;
@@ -71,13 +71,13 @@ struct zdom_data {
 
 /* For the moment, we will do all driver I/O synchronously.*/
 
-static int __driver_cmd(union zhpe_op *op, size_t req_len, size_t rsp_len)
+static int __driver_cmd(union zhpe_offloaded_op *op, size_t req_len, size_t rsp_len)
 {
     int                 ret = 0;
     int                 opcode = op->hdr.opcode;
     ssize_t             res;
 
-    op->hdr.version = ZHPE_OP_VERSION;
+    op->hdr.version = ZHPE_OFFLOADED_OP_VERSION;
     op->hdr.index = 0;
 
     res = write(dev_fd, op, req_len);
@@ -98,9 +98,9 @@ static int __driver_cmd(union zhpe_op *op, size_t req_len, size_t rsp_len)
         goto done;
     }
     ret = -EINVAL;
-    if (!expected_saw("version", ZHPE_OP_VERSION, op->hdr.version))
+    if (!expected_saw("version", ZHPE_OFFLOADED_OP_VERSION, op->hdr.version))
         goto done;
-    if (!expected_saw("opcode", opcode | ZHPE_OP_RESPONSE, op->hdr.opcode))
+    if (!expected_saw("opcode", opcode | ZHPE_OFFLOADED_OP_RESPONSE, op->hdr.opcode))
         goto done;
     if (!expected_saw("index", 0, op->hdr.index))
         goto done;
@@ -115,7 +115,7 @@ static int __driver_cmd(union zhpe_op *op, size_t req_len, size_t rsp_len)
     return ret;
 }
 
-static int driver_cmd(union zhpe_op *op, size_t req_len, size_t rsp_len)
+static int driver_cmd(union zhpe_offloaded_op *op, size_t req_len, size_t rsp_len)
 {
     int                 ret;
 
@@ -126,12 +126,12 @@ static int driver_cmd(union zhpe_op *op, size_t req_len, size_t rsp_len)
     return ret;
 }
 
-static int zhpe_lib_init(struct zhpeq_attr *attr)
+static int zhpe_offloaded_lib_init(struct zhpeq_attr *attr)
 {
     int                 ret = -EINVAL;
-    union zhpe_op       op;
-    union zhpe_req      *req = &op.req;
-    union zhpe_rsp      *rsp = &op.rsp;
+    union zhpe_offloaded_op       op;
+    union zhpe_offloaded_req      *req = &op.req;
+    union zhpe_offloaded_rsp      *rsp = &op.rsp;
 
     dev_fd = open(DEV_NAME, O_RDWR);
     if (dev_fd == -1) {
@@ -140,7 +140,7 @@ static int zhpe_lib_init(struct zhpeq_attr *attr)
         goto done;
     }
 
-    req->hdr.opcode = ZHPE_OP_INIT;
+    req->hdr.opcode = ZHPE_OFFLOADED_OP_INIT;
     ret = driver_cmd(&op, sizeof(req->init), sizeof(rsp->init));
     if (ret < 0)
         goto done;
@@ -156,14 +156,14 @@ static int zhpe_lib_init(struct zhpeq_attr *attr)
     if (!shared_local)
         goto done;
     ret = -EINVAL;
-    if (!expected_saw("global_magic", ZHPE_MAGIC, shared_global->magic))
+    if (!expected_saw("global_magic", ZHPE_OFFLOADED_MAGIC, shared_global->magic))
         goto done;
-    if (!expected_saw("global_version", ZHPE_GLOBAL_SHARED_VERSION,
+    if (!expected_saw("global_version", ZHPE_OFFLOADED_GLOBAL_SHARED_VERSION,
                       shared_global->version))
         goto done;
-    if (!expected_saw("local_magic", ZHPE_MAGIC, shared_local->magic))
+    if (!expected_saw("local_magic", ZHPE_OFFLOADED_MAGIC, shared_local->magic))
         goto done;
-    if (!expected_saw("local_version", ZHPE_LOCAL_SHARED_VERSION,
+    if (!expected_saw("local_version", ZHPE_OFFLOADED_LOCAL_SHARED_VERSION,
                       shared_local->version))
         goto done;
     memcpy(zhpeq_uuid, rsp->init.uuid, sizeof(zhpeq_uuid));
@@ -188,9 +188,9 @@ static int compare_uuid(const void *key1, const void *key2)
 static int uuid_free(uuid_t *uu)
 {
     int                 ret = 0;
-    union zhpe_op       op;
-    union zhpe_req      *req = &op.req;
-    union zhpe_rsp      *rsp = &op.rsp;
+    union zhpe_offloaded_op       op;
+    union zhpe_offloaded_req      *req = &op.req;
+    union zhpe_offloaded_rsp      *rsp = &op.rsp;
     void                **tval;
     struct dev_uuid_tree_entry *uue;
 
@@ -201,7 +201,7 @@ static int uuid_free(uuid_t *uu)
         if (!--(uue->use_count)) {
             (void)tdelete(uu, &dev_uuid_tree, compare_uuid);
             if (uuid_compare(*uu, zhpeq_uuid)) {
-                req->hdr.opcode = ZHPE_OP_UUID_FREE;
+                req->hdr.opcode = ZHPE_OFFLOADED_OP_UUID_FREE;
                 memcpy(req->uuid_free.uuid, *uu, sizeof(req->uuid_free.uuid));
                 ret =__driver_cmd(&op, sizeof(req->uuid_free),
                                   sizeof(rsp->uuid_free));
@@ -215,7 +215,7 @@ static int uuid_free(uuid_t *uu)
     return ret;
 }
 
-static int zhpe_domain_free(struct zhpeq_dom *zdom)
+static int zhpe_offloaded_domain_free(struct zhpeq_dom *zdom)
 {
     int                 ret = 0;
     struct zdom_data    *bdom = zdom->backend_data;
@@ -242,7 +242,7 @@ static int zhpe_domain_free(struct zhpeq_dom *zdom)
     return ret;
 }
 
-static int zhpe_domain(struct zhpeq_dom *zdom)
+static int zhpe_offloaded_domain(struct zhpeq_dom *zdom)
 {
     int                 ret = -ENOMEM;
     struct zdom_data    *bdom;
@@ -258,15 +258,15 @@ static int zhpe_domain(struct zhpeq_dom *zdom)
     return ret;
 }
 
-static int zhpe_qalloc(struct zhpeq *zq, int wqlen, int cqlen,
+static int zhpe_offloaded_qalloc(struct zhpeq *zq, int wqlen, int cqlen,
                        int traffic_class, int priority, int slice_mask)
 {
     int                 ret;
-    union zhpe_op       op;
-    union zhpe_req      *req = &op.req;
-    union zhpe_rsp      *rsp = &op.rsp;
+    union zhpe_offloaded_op       op;
+    union zhpe_offloaded_req      *req = &op.req;
+    union zhpe_offloaded_rsp      *rsp = &op.rsp;
 
-    req->hdr.opcode = ZHPE_OP_XQALLOC;
+    req->hdr.opcode = ZHPE_OFFLOADED_OP_XQALLOC;
     req->xqalloc.cmdq_ent = wqlen;
     req->xqalloc.cmplq_ent = wqlen;
     req->xqalloc.traffic_class = traffic_class;
@@ -283,7 +283,7 @@ static int zhpe_qalloc(struct zhpeq *zq, int wqlen, int cqlen,
     return ret;
 }
 
-static int zhpe_exchange(struct zhpeq *zq, int sock_fd, void *sa,
+static int zhpe_offloaded_exchange(struct zhpeq *zq, int sock_fd, void *sa,
                          size_t *sa_len)
 {
     int                 ret = 0;
@@ -307,14 +307,14 @@ static int zhpe_exchange(struct zhpeq *zq, int sock_fd, void *sa,
     return ret;
 }
 
-static int zhpe_open(struct zhpeq *zq, void *sa)
+static int zhpe_offloaded_open(struct zhpeq *zq, void *sa)
 {
     int                 ret = 0;
     struct zdom_data    *bdom = zq->zdom->backend_data;
     struct sockaddr_zhpe *sz = sa;
-    union zhpe_op       op;
-    union zhpe_req      *req = &op.req;
-    union zhpe_rsp      *rsp = &op.rsp;
+    union zhpe_offloaded_op       op;
+    union zhpe_offloaded_req      *req = &op.req;
+    union zhpe_offloaded_rsp      *rsp = &op.rsp;
     struct zdom_node    *node;
     void                **tval;
     struct dev_uuid_tree_entry *uue;
@@ -336,10 +336,10 @@ static int zhpe_open(struct zhpeq *zq, void *sa)
                 *tval = uue;
                 memcpy(uue->uuid, sz->sz_uuid, sizeof(uue->uuid));
                 uue->use_count = 1;
-                uue->fam = ((sz->sz_queue & ZHPE_SA_TYPE_MASK) ==
-                            ZHPE_SA_TYPE_FAM);
+                uue->fam = ((sz->sz_queue & ZHPE_OFFLOADED_SA_TYPE_MASK) ==
+                            ZHPE_OFFLOADED_SA_TYPE_FAM);
 
-                req->hdr.opcode = ZHPE_OP_UUID_IMPORT;
+                req->hdr.opcode = ZHPE_OFFLOADED_OP_UUID_IMPORT;
                 memcpy(req->uuid_import.uuid, sz->sz_uuid,
                        sizeof(req->uuid_import.uuid));
                 if (uue->fam) {
@@ -390,7 +390,7 @@ static int zhpe_open(struct zhpeq *zq, void *sa)
     return ret;
 }
 
-static int zhpe_close(struct zhpeq *zq, int open_idx)
+static int zhpe_offloaded_close(struct zhpeq *zq, int open_idx)
 {
     int                 ret = -EINVAL;
     struct zdom_data    *bdom = zq->zdom->backend_data;
@@ -411,21 +411,21 @@ static int zhpe_close(struct zhpeq *zq, int open_idx)
     return ret;
 }
 
-static int zhpe_qfree(struct zhpeq *zq)
+static int zhpe_offloaded_qfree(struct zhpeq *zq)
 {
     int                 ret;
-    union zhpe_op       op;
-    union zhpe_req      *req = &op.req;
-    union zhpe_rsp      *rsp = &op.rsp;
+    union zhpe_offloaded_op       op;
+    union zhpe_offloaded_req      *req = &op.req;
+    union zhpe_offloaded_rsp      *rsp = &op.rsp;
 
-    req->hdr.opcode = ZHPE_OP_XQFREE;
+    req->hdr.opcode = ZHPE_OFFLOADED_OP_XQFREE;
     req->xqfree.info = zq->xqinfo;
     ret = driver_cmd(&op, sizeof(req->xqfree), sizeof(rsp->xqfree));
 
     return ret;
 }
 
-static int zhpe_wq_signal(struct zhpeq *zq)
+static int zhpe_offloaded_wq_signal(struct zhpeq *zq)
 {
     return 0;
 }
@@ -447,15 +447,15 @@ static int compare_qkdata(const void *key1, const void *key2)
     return ret;
 }
 
-static int zhpe_mr_reg(struct zhpeq_dom *zdom,
+static int zhpe_offloaded_mr_reg(struct zhpeq_dom *zdom,
                        const void *buf, size_t len,
                        uint32_t access, struct zhpeq_key_data **qkdata_out)
 {
     int                 ret = -ENOMEM;
     struct zhpeq_mr_desc_v1 *desc = NULL;
-    union zhpe_op       op;
-    union zhpe_req      *req = &op.req;
-    union zhpe_rsp      *rsp = &op.rsp;
+    union zhpe_offloaded_op       op;
+    union zhpe_offloaded_req      *req = &op.req;
+    union zhpe_offloaded_rsp      *rsp = &op.rsp;
     void                **tval;
     struct dev_mr_tree_entry *mre;
 
@@ -465,8 +465,8 @@ static int zhpe_mr_reg(struct zhpeq_dom *zdom,
     /* Zero access is expected to work. */
     if (!access)
         access = ZHPEQ_MR_PUT;
-    desc->access_plus = access | ZHPE_MR_INDIVIDUAL;
-    desc->hdr.magic = ZHPE_MAGIC;
+    desc->access_plus = access | ZHPE_OFFLOADED_MR_INDIVIDUAL;
+    desc->hdr.magic = ZHPE_OFFLOADED_MAGIC;
     desc->hdr.version = ZHPEQ_MR_V1;
     desc->qkdata.z.vaddr = (uintptr_t)buf;
     desc->qkdata.laddr = (uintptr_t)buf;
@@ -487,7 +487,7 @@ static int zhpe_mr_reg(struct zhpeq_dom *zdom,
             mre = malloc(sizeof(*mre));
             if (mre) {
                 *tval = mre;
-                req->hdr.opcode = ZHPE_OP_MR_REG;
+                req->hdr.opcode = ZHPE_OFFLOADED_OP_MR_REG;
                 req->mr_reg.vaddr = (uintptr_t)buf;
                 req->mr_reg.len = len;
                 req->mr_reg.access = desc->access_plus;
@@ -516,20 +516,20 @@ static int zhpe_mr_reg(struct zhpeq_dom *zdom,
     return ret;
 }
 
-static int zhpe_mr_free(struct zhpeq_dom *zdom, struct zhpeq_key_data *qkdata)
+static int zhpe_offloaded_mr_free(struct zhpeq_dom *zdom, struct zhpeq_key_data *qkdata)
 {
     int                 ret = -EINVAL;
     struct zhpeq_mr_desc_v1 *desc = container_of(qkdata,
                                                  struct zhpeq_mr_desc_v1,
                                                  qkdata);
-    union zhpe_op       op;
-    union zhpe_req      *req = &op.req;
-    union zhpe_rsp      *rsp = &op.rsp;
+    union zhpe_offloaded_op       op;
+    union zhpe_offloaded_req      *req = &op.req;
+    union zhpe_offloaded_rsp      *rsp = &op.rsp;
     void                **tval;
     struct dev_mr_tree_entry *mre;
 
 
-    if (desc->hdr.magic != ZHPE_MAGIC || desc->hdr.version != ZHPEQ_MR_V1)
+    if (desc->hdr.magic != ZHPE_OFFLOADED_MAGIC || desc->hdr.version != ZHPEQ_MR_V1)
         goto done;
 
     mutex_lock(&dev_mutex);
@@ -539,7 +539,7 @@ static int zhpe_mr_free(struct zhpeq_dom *zdom, struct zhpeq_key_data *qkdata)
         mre = *tval;
         if (!--(mre->use_count)) {
             (void)tdelete(&qkdata, &dev_mr_tree, compare_qkdata);
-            req->hdr.opcode = ZHPE_OP_MR_FREE;
+            req->hdr.opcode = ZHPE_OFFLOADED_OP_MR_FREE;
             req->mr_free.vaddr = desc->qkdata.z.vaddr;
             req->mr_free.len = desc->qkdata.z.len;
             req->mr_free.access = desc->access_plus;
@@ -556,7 +556,7 @@ static int zhpe_mr_free(struct zhpeq_dom *zdom, struct zhpeq_key_data *qkdata)
     return ret;
 }
 
-static int zhpe_zmmu_import(struct zhpeq_dom *zdom, int open_idx,
+static int zhpe_offloaded_zmmu_import(struct zhpeq_dom *zdom, int open_idx,
                             const void *blob, size_t blob_len, bool cpu_visible,
                             struct zhpeq_key_data **qkdata_out)
 {
@@ -564,9 +564,9 @@ static int zhpe_zmmu_import(struct zhpeq_dom *zdom, int open_idx,
     struct zdom_data    *bdom = zdom->backend_data;
     const struct key_data_packed *pdata = blob;
     struct zhpeq_mr_desc_v1 *desc = NULL;
-    union zhpe_op       op;
-    union zhpe_req      *req = &op.req;
-    union zhpe_rsp      *rsp = &op.rsp;
+    union zhpe_offloaded_op       op;
+    union zhpe_offloaded_req      *req = &op.req;
+    union zhpe_offloaded_rsp      *rsp = &op.rsp;
     struct zdom_node    *node;
 
     if (blob_len != sizeof(*pdata) || cpu_visible ||
@@ -581,14 +581,14 @@ static int zhpe_zmmu_import(struct zhpeq_dom *zdom, int open_idx,
     if (!desc)
         goto done;
 
-    desc->hdr.magic = ZHPE_MAGIC;
+    desc->hdr.magic = ZHPE_OFFLOADED_MAGIC;
     desc->hdr.version = ZHPEQ_MR_V1 | ZHPEQ_MR_REMOTE;
     unpack_kdata(pdata, &desc->qkdata);
     desc->qkdata.rsp_zaddr = desc->qkdata.z.zaddr;
-    desc->access_plus = desc->qkdata.z.access | ZHPE_MR_INDIVIDUAL;
+    desc->access_plus = desc->qkdata.z.access | ZHPE_OFFLOADED_MR_INDIVIDUAL;
     desc->uuid_idx = open_idx;
 
-    req->hdr.opcode = ZHPE_OP_RMR_IMPORT;
+    req->hdr.opcode = ZHPE_OFFLOADED_OP_RMR_IMPORT;
     memcpy(req->rmr_import.uuid, node->uue->uuid, sizeof(req->rmr_import.uuid));
     req->rmr_import.rsp_zaddr = desc->qkdata.rsp_zaddr;
     req->rmr_import.len = desc->qkdata.z.len;
@@ -606,16 +606,16 @@ static int zhpe_zmmu_import(struct zhpeq_dom *zdom, int open_idx,
     return ret;
 }
 
-static int zhpe_zmmu_fam_import(struct zhpeq_dom *zdom, int open_idx,
+static int zhpe_offloaded_zmmu_fam_import(struct zhpeq_dom *zdom, int open_idx,
                                 bool cpu_visible,
                                 struct zhpeq_key_data **qkdata_out)
 {
     int                 ret = -EINVAL;
     struct zdom_data    *bdom = zdom->backend_data;
     struct zhpeq_mr_desc_v1 *desc = NULL;
-    union zhpe_op       op;
-    union zhpe_req      *req = &op.req;
-    union zhpe_rsp      *rsp = &op.rsp;
+    union zhpe_offloaded_op       op;
+    union zhpe_offloaded_req      *req = &op.req;
+    union zhpe_offloaded_rsp      *rsp = &op.rsp;
     struct zdom_node    *node;
 
     if (cpu_visible || open_idx < 0 || open_idx >= bdom->node_idx)
@@ -629,19 +629,19 @@ static int zhpe_zmmu_fam_import(struct zhpeq_dom *zdom, int open_idx,
     if (!desc)
         goto done;
 
-    desc->hdr.magic = ZHPE_MAGIC;
+    desc->hdr.magic = ZHPE_OFFLOADED_MAGIC;
     desc->hdr.version = ZHPEQ_MR_V1 | ZHPEQ_MR_REMOTE;
     desc->qkdata.z.vaddr = 0;
     desc->qkdata.rsp_zaddr = 0;
     /* FAM size in GiB in XID portion of sz_queue. */
-    desc->qkdata.z.len = node->sz_queue & ZHPE_SA_XID_MASK;
+    desc->qkdata.z.len = node->sz_queue & ZHPE_OFFLOADED_SA_XID_MASK;
     desc->qkdata.z.len *= (1ULL << 30);
     desc->qkdata.z.access = (ZHPEQ_MR_GET_REMOTE | ZHPEQ_MR_PUT_REMOTE |
                              ZHPEQ_MR_KEY_ZERO_OFF);
-    desc->access_plus = desc->qkdata.z.access | ZHPE_MR_INDIVIDUAL;
+    desc->access_plus = desc->qkdata.z.access | ZHPE_OFFLOADED_MR_INDIVIDUAL;
     desc->uuid_idx = open_idx;
 
-    req->hdr.opcode = ZHPE_OP_RMR_IMPORT;
+    req->hdr.opcode = ZHPE_OFFLOADED_OP_RMR_IMPORT;
     memcpy(req->rmr_import.uuid, node->uue->uuid, sizeof(req->rmr_import.uuid));
     req->rmr_import.rsp_zaddr = desc->qkdata.rsp_zaddr;
     req->rmr_import.len = desc->qkdata.z.len;
@@ -659,22 +659,22 @@ static int zhpe_zmmu_fam_import(struct zhpeq_dom *zdom, int open_idx,
     return ret;
 }
 
-static int zhpe_zmmu_free(struct zhpeq_dom *zdom, struct zhpeq_key_data *qkdata)
+static int zhpe_offloaded_zmmu_free(struct zhpeq_dom *zdom, struct zhpeq_key_data *qkdata)
 {
     int                 ret = -EINVAL;
     struct zdom_data    *bdom = zdom->backend_data;
     struct zhpeq_mr_desc_v1 *desc = container_of(qkdata,
                                                  struct zhpeq_mr_desc_v1,
                                                  qkdata);
-    union zhpe_op       op;
-    union zhpe_req      *req = &op.req;
-    union zhpe_rsp      *rsp = &op.rsp;
+    union zhpe_offloaded_op       op;
+    union zhpe_offloaded_req      *req = &op.req;
+    union zhpe_offloaded_rsp      *rsp = &op.rsp;
 
-    if (desc->hdr.magic != ZHPE_MAGIC ||
+    if (desc->hdr.magic != ZHPE_OFFLOADED_MAGIC ||
         desc->hdr.version != (ZHPEQ_MR_V1 | ZHPEQ_MR_REMOTE))
         goto done;
 
-    req->hdr.opcode = ZHPE_OP_RMR_FREE;
+    req->hdr.opcode = ZHPE_OFFLOADED_OP_RMR_FREE;
     memcpy(req->rmr_free.uuid, bdom->nodes[desc->uuid_idx].uue->uuid,
            sizeof(req->rmr_free.uuid));
     req->rmr_free.req_addr = qkdata->z.zaddr;
@@ -688,7 +688,7 @@ static int zhpe_zmmu_free(struct zhpeq_dom *zdom, struct zhpeq_key_data *qkdata)
     return ret;
 }
 
-static int zhpe_zmmu_export(struct zhpeq_dom *zdom,
+static int zhpe_offloaded_zmmu_export(struct zhpeq_dom *zdom,
                             const struct zhpeq_key_data *qkdata,
                             void *blob, size_t *blob_len)
 {
@@ -706,12 +706,12 @@ static int zhpe_zmmu_export(struct zhpeq_dom *zdom,
     return ret;
 }
 
-static void zhpe_print_info(struct zhpeq *zq)
+static void zhpe_offloaded_print_info(struct zhpeq *zq)
 {
     print_info("GenZ ASIC backend\n");
 }
 
-static int zhpe_getaddr(struct zhpeq *zq, void *sa, size_t *sa_len)
+static int zhpe_offloaded_getaddr(struct zhpeq *zq, void *sa, size_t *sa_len)
 {
     int                 ret = -EOVERFLOW;
     struct sockaddr_zhpe *sz = sa;
@@ -721,7 +721,7 @@ static int zhpe_getaddr(struct zhpeq *zq, void *sa, size_t *sa_len)
 
     sz->sz_family = AF_ZHPE;
     memcpy(sz->sz_uuid, &zhpeq_uuid, sizeof(sz->sz_uuid));
-    sz->sz_queue = ZHPE_QUEUEINVAL;
+    sz->sz_queue = ZHPE_OFFLOADED_QUEUEINVAL;
     ret = 0;
 
  done:
@@ -730,7 +730,7 @@ static int zhpe_getaddr(struct zhpeq *zq, void *sa, size_t *sa_len)
     return ret;
 }
 
-char *zhpe_qkdata_id_str(struct zhpeq_dom *zdom,
+char *zhpe_offloaded_qkdata_id_str(struct zhpeq_dom *zdom,
                          const struct zhpeq_key_data *qkdata)
 {
     char                *ret = NULL;
@@ -752,30 +752,30 @@ char *zhpe_qkdata_id_str(struct zhpeq_dom *zdom,
 }
 
 struct backend_ops ops = {
-    .lib_init           = zhpe_lib_init,
-    .domain             = zhpe_domain,
-    .domain_free        = zhpe_domain_free,
-    .qalloc             = zhpe_qalloc,
-    .qfree              = zhpe_qfree,
-    .exchange           = zhpe_exchange,
-    .open               = zhpe_open,
-    .close              = zhpe_close,
-    .wq_signal          = zhpe_wq_signal,
-    .mr_reg             = zhpe_mr_reg,
-    .mr_free            = zhpe_mr_free,
-    .zmmu_import        = zhpe_zmmu_import,
-    .zmmu_fam_import    = zhpe_zmmu_fam_import,
-    .zmmu_free          = zhpe_zmmu_free,
-    .zmmu_export        = zhpe_zmmu_export,
-    .print_info         = zhpe_print_info,
-    .getaddr            = zhpe_getaddr,
-    .qkdata_id_str      = zhpe_qkdata_id_str,
+    .lib_init           = zhpe_offloaded_lib_init,
+    .domain             = zhpe_offloaded_domain,
+    .domain_free        = zhpe_offloaded_domain_free,
+    .qalloc             = zhpe_offloaded_qalloc,
+    .qfree              = zhpe_offloaded_qfree,
+    .exchange           = zhpe_offloaded_exchange,
+    .open               = zhpe_offloaded_open,
+    .close              = zhpe_offloaded_close,
+    .wq_signal          = zhpe_offloaded_wq_signal,
+    .mr_reg             = zhpe_offloaded_mr_reg,
+    .mr_free            = zhpe_offloaded_mr_free,
+    .zmmu_import        = zhpe_offloaded_zmmu_import,
+    .zmmu_fam_import    = zhpe_offloaded_zmmu_fam_import,
+    .zmmu_free          = zhpe_offloaded_zmmu_free,
+    .zmmu_export        = zhpe_offloaded_zmmu_export,
+    .print_info         = zhpe_offloaded_print_info,
+    .getaddr            = zhpe_offloaded_getaddr,
+    .qkdata_id_str      = zhpe_offloaded_qkdata_id_str,
 };
 
-void zhpeq_backend_zhpe_init(int fd)
+void zhpeq_backend_zhpe_offloaded_init(int fd)
 {
     if (fd == -1)
         return;
 
-    zhpeq_register_backend(ZHPE_BACKEND_ZHPE, &ops);
+    zhpeq_register_backend(ZHPE_OFFLOADED_BACKEND_ZHPE, &ops);
 }

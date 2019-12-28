@@ -900,7 +900,7 @@ const char *sockaddr_ntop(const void *addr, char *buf, size_t len)
         break;
 
     case AF_ZHPE:
-        if (len < ZHPE_ADDRSTRLEN) {
+        if (len < ZHPE_OFFLOADED_ADDRSTRLEN) {
             errno = ENOSPC;
             break;
         }
