@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -xe
 
 APPNAME=$(basename $0)
 APPDIR=$(cd $(dirname $0); pwd)
