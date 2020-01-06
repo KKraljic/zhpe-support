@@ -111,7 +111,7 @@ fi
 	cd $D
 	cat <<EOF >prep3.sh
 #!/bin/bash
-set -e
+set -xe
 cd $APPDIR/$B/step3
 [[ ! -e prep3.done ]] || exit 0
 	cmake \
