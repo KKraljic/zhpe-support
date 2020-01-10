@@ -38,6 +38,7 @@
 
 static void __attribute__((constructor)) backend_lib_init(void)
 {
+    PRINT_DEBUG;
     int                 fd = -1;
     int                 err;
 

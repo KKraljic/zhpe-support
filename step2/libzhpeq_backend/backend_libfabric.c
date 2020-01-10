@@ -238,16 +238,19 @@ record_io_start(int rc, struct stuff *conn, uint64_t op, uint64_t fi_addr,
                 void *buf, void *desc, uint64_t raddr, uint64_t rkey,
                 uint64_t len, void *context)
 {
+    PRINT_DEBUG;
 }
 
 static inline void record_io_done(struct context *context)
 {
+    PRINT_DEBUG;
 }
 #endif
 
 static int lfab_eng_work_queue(struct engine *eng, zhpeu_worker worker,
                                void *data)
 {
+    PRINT_DEBUG;
     int                 ret = 0;
     struct zhpeu_work   work;
 
@@ -293,6 +296,7 @@ static int lfab_eng_work_queue(struct engine *eng, zhpeu_worker worker,
 static bool worker_qfree_pre(struct zhpeu_work_head *head,
                              struct zhpeu_work *work)
 {
+    PRINT_DEBUG;
     struct lfab_work_qfree_pre *data = work->data;
     struct stuff        *conn = data->conn;
     struct engine       *eng = container_of(head, struct engine, work_head);
@@ -349,6 +353,7 @@ static bool worker_qfree_pre(struct zhpeu_work_head *head,
 
 static int retry_none(void *args)
 {
+    PRINT_DEBUG;
     /* No retry, will be returned to av_wait caller. */
     return 1;
 }
@@ -356,6 +361,7 @@ static int retry_none(void *args)
 static bool worker_av_op_remove(struct zhpeu_work_head *head,
                                 struct zhpeu_work *work)
 {
+    PRINT_DEBUG;
     struct lfab_work_av_op *data = work->data;
     struct stuff        *conn = data->conn;
     struct fab_conn     *fab_conn = conn->fab_plus->fab_conn;
@@ -368,6 +374,7 @@ static bool worker_av_op_remove(struct zhpeu_work_head *head,
 static bool worker_av_op_recv(struct zhpeu_work_head *head,
                               struct zhpeu_work *work)
 {
+    PRINT_DEBUG;
     struct lfab_work_av_op *data = work->data;
     struct stuff        *conn = data->conn;
     struct fab_conn     *fab_conn = conn->fab_plus->fab_conn;
@@ -385,6 +392,7 @@ static bool worker_av_op_recv(struct zhpeu_work_head *head,
 static bool worker_av_op_send(struct zhpeu_work_head *head,
                               struct zhpeu_work *work)
 {
+    PRINT_DEBUG;
     struct lfab_work_av_op *data = work->data;
     struct stuff        *conn = data->conn;
     struct fab_conn     *fab_conn = conn->fab_plus->fab_conn;
@@ -404,6 +412,7 @@ static bool worker_av_op_send(struct zhpeu_work_head *head,
 static bool worker_av_op_insert(struct zhpeu_work_head *head,
                                 struct zhpeu_work *work)
 {
+    PRINT_DEBUG;
     struct lfab_work_av_op *data = work->data;
     struct stuff        *conn = data->conn;
     struct fab_conn     *fab_conn = conn->fab_plus->fab_conn;
@@ -421,6 +430,7 @@ static bool worker_av_op_insert(struct zhpeu_work_head *head,
 
 static int stuff_free(struct stuff *stuff)
 {
+    PRINT_DEBUG;
     int                 ret = 0;
     int                 rc;
 
@@ -440,6 +450,7 @@ static int stuff_free(struct stuff *stuff)
 static bool worker_domain_free(struct zhpeu_work_head *head,
                                struct zhpeu_work *work)
 {
+    PRINT_DEBUG;
     struct zdom_data    *bdom = work->data;
 
     work->status = fab_dom_free(bdom->fab_dom);
@@ -452,6 +463,7 @@ static bool worker_domain_free(struct zhpeu_work_head *head,
 
 static int lfab_domain_free(struct zhpeq_dom *zdom)
 {
+    PRINT_DEBUG;
     int                 ret = 0;
     struct zdom_data    *bdom = zdom->backend_data;
 
@@ -465,12 +477,14 @@ static int lfab_domain_free(struct zhpeq_dom *zdom)
 
 static void onfree_one_dom(struct fab_dom *dom, void *data)
 {
+    PRINT_DEBUG;
     *(void **)data = NULL;
     free(dom);
 }
 
 static void onfree_one_conn(struct fab_conn *conn, void *data)
 {
+    PRINT_DEBUG;
     struct fab_conn_plus *fab_plus = data;
 
     FI_CLOSE(fab_plus->results_mr);
@@ -486,6 +500,7 @@ static void onfree_one_conn(struct fab_conn *conn, void *data)
 static bool worker_domain(struct zhpeu_work_head *head,
                           struct zhpeu_work *work)
 {
+    PRINT_DEBUG;
     int                 ret = -ENOMEM;
     struct zhpeq_dom    *zdom = work->data;
     struct zdom_data    *bdom;
@@ -535,11 +550,13 @@ static bool worker_domain(struct zhpeu_work_head *head,
 
 static int lfab_domain(struct zhpeq_dom *zdom)
 {
+    PRINT_DEBUG;
     return lfab_eng_work_queue(&eng, worker_domain, zdom);
 }
 
 static struct stuff *stuff_alloc(void)
 {
+    PRINT_DEBUG;
     struct stuff        *ret = NULL;
     int                 err = 0;
 
@@ -576,6 +593,7 @@ static struct stuff *stuff_alloc(void)
 static int lfab_qalloc(struct zhpeq *zq, int cmd_qlen, int cmp_qlen,
                        int traffic_class, int priority, int slice_mask)
 {
+    PRINT_DEBUG;
     /* Tell caller we don't have a driver. */
     zq->fd = -1;
     /* Use xqinfo for compatiblity with asic code. */
@@ -595,6 +613,7 @@ static int lfab_qalloc(struct zhpeq *zq, int cmd_qlen, int cmp_qlen,
 static bool worker_qalloc_post(struct zhpeu_work_head *head,
                                struct zhpeu_work *work)
 {
+    PRINT_DEBUG;
     int                 ret = -ENOMEM;
     struct zhpeq        *zq = work->data;
     struct zhpeq_dom    *zdom = zq->zdom;
@@ -674,12 +693,14 @@ static bool worker_qalloc_post(struct zhpeu_work_head *head,
 
 static int lfab_qalloc_post(struct zhpeq *zq)
 {
+    PRINT_DEBUG;
     return lfab_eng_work_queue(&eng, worker_qalloc_post, zq);
 }
 
 static int lfab_exchange(struct zhpeq *zq, int sock_fd, void *sa,
                          size_t *sa_len)
 {
+    PRINT_DEBUG;
     int                 ret;
     struct stuff        *conn = zq->backend_data;
     struct fab_conn     *fab_conn = conn->fab_plus->fab_conn;
@@ -693,6 +714,7 @@ static int lfab_exchange(struct zhpeq *zq, int sock_fd, void *sa,
 
 static int lfab_open(struct zhpeq *zq, void *sa)
 {
+    PRINT_DEBUG;
     int                 ret;
     struct stuff        *conn = zq->backend_data;
     struct lfab_work_av_op data = {
@@ -719,6 +741,7 @@ static int lfab_open(struct zhpeq *zq, void *sa)
 
 static int lfab_close(struct zhpeq *zq, int open_idx)
 {
+    PRINT_DEBUG;
     struct stuff        *conn = zq->backend_data;
     struct lfab_work_av_op data = {
         .conn           = conn,
@@ -730,6 +753,7 @@ static int lfab_close(struct zhpeq *zq, int open_idx)
 
 static inline void cq_write(void *vcontext, int status)
 {
+    PRINT_DEBUG;
     struct context      *context = vcontext;
     struct stuff        *conn;
     struct zhpeq        *zq;
@@ -770,6 +794,7 @@ static inline void cq_write(void *vcontext, int status)
 
 static void cq_update(void *arg, void *vcqe, bool err)
 {
+    PRINT_DEBUG;
     struct fi_cq_entry  *cqe;
     struct fi_cq_err_entry *cqerr;
 
@@ -784,6 +809,7 @@ static void cq_update(void *arg, void *vcqe, bool err)
 
 static inline void cleanup_eagain(struct stuff *conn, struct context *context)
 {
+    PRINT_DEBUG;
     conn->tx_queued--;
     /* Return context to head of free list. */
     STAILQ_INSERT_HEAD(&context->fab_plus->context_free,
@@ -792,6 +818,7 @@ static inline void cleanup_eagain(struct stuff *conn, struct context *context)
 
 static bool lfab_zq(struct stuff *conn)
 {
+    PRINT_DEBUG;
     struct zhpeq        *zq = conn->zq;
     struct fab_conn_plus *fab_plus = conn->fab_plus;
     struct fab_conn     *fab_conn = fab_plus->fab_conn;
@@ -1063,6 +1090,7 @@ static bool lfab_zq(struct stuff *conn)
 
 static void *lfab_eng_thread(void *veng)
 {
+    PRINT_DEBUG;
     struct engine       *eng = veng;
     bool                locked = false;
     struct timespec     ts_beg = { .tv_sec = 0 };
@@ -1112,6 +1140,7 @@ static void *lfab_eng_thread(void *veng)
 
 static int lfab_lib_init(struct zhpeq_attr *attr)
 {
+    PRINT_DEBUG;
     attr->backend = ZHPE_OFFLOADED_BACKEND_LIBFABRIC;
     attr->z.max_tx_queues = (1U << 10);
     attr->z.max_rx_queues = (1U << 10);
@@ -1127,6 +1156,7 @@ static int lfab_lib_init(struct zhpeq_attr *attr)
 
 static int lfab_qfree_pre(struct zhpeq *zq)
 {
+    PRINT_DEBUG;
     int                 ret = 0;
     struct lfab_work_qfree_pre data = {
         .conn           = zq->backend_data,
@@ -1141,11 +1171,13 @@ static int lfab_qfree_pre(struct zhpeq *zq)
 
 static int lfab_qfree(struct zhpeq *zq)
 {
+    PRINT_DEBUG;
     return 0;
 }
 
 static int lfab_wq_signal(struct zhpeq *zq)
 {
+    PRINT_DEBUG;
     struct circleq_entry *circleq_entry;
     struct stuff        *conn;
 
@@ -1166,11 +1198,13 @@ static int lfab_wq_signal(struct zhpeq *zq)
 
 static ssize_t lfab_cq_poll(struct zhpeq *zq, size_t hint)
 {
+    PRINT_DEBUG;
     return lfab_wq_signal(zq);
 }
 
 static void free_lcl_mr(struct zdom_data *bdom, uint32_t index)
 {
+    PRINT_DEBUG;
     struct free_index   old;
     struct free_index   new;
 
@@ -1186,6 +1220,7 @@ static void free_lcl_mr(struct zdom_data *bdom, uint32_t index)
 static bool worker_fi_close(struct zhpeu_work_head *head,
                             struct zhpeu_work *work)
 {
+    PRINT_DEBUG;
     struct fid          *fid = work->data;
 
     work->status = fi_close(fid);
@@ -1196,6 +1231,7 @@ static bool worker_fi_close(struct zhpeu_work_head *head,
 static bool worker_fi_mr_reg(struct zhpeu_work_head *head,
                              struct zhpeu_work *work)
 {
+    PRINT_DEBUG;
     struct lfab_work_fi_mr_reg *data = work->data;
 
     work->status = fi_mr_reg(data->domain, data->buf, data->len, data->access,
@@ -1210,6 +1246,7 @@ static int lfab_mr_reg(struct zhpeq_dom *zdom,
                        const void *buf, size_t len,
                        uint32_t access, struct zhpeq_key_data **qkdata_out)
 {
+    PRINT_DEBUG;
     int                 ret = -ENOMEM;
     struct zdom_data    *bdom = zdom->backend_data;
     struct fab_dom      *fab_dom = bdom->fab_dom;
@@ -1275,6 +1312,7 @@ static int lfab_mr_reg(struct zhpeq_dom *zdom,
 
 static int lfab_mr_free(struct zhpeq_dom *zdom, struct zhpeq_key_data *qkdata)
 {
+    PRINT_DEBUG;
     int                 ret = -EINVAL;
     struct zdom_data    *bdom = zdom->backend_data;
     struct zhpeq_mr_desc_v1 *desc = container_of(qkdata,
@@ -1295,6 +1333,7 @@ static int lfab_mr_free(struct zhpeq_dom *zdom, struct zhpeq_key_data *qkdata)
 
 static void free_rkey(struct zdom_data *bdom, uint32_t index)
 {
+    PRINT_DEBUG;
     struct free_index   old;
     struct free_index   new;
 
@@ -1312,6 +1351,7 @@ static int lfab_zmmu_import(struct zhpeq_dom *zdom, int open_idx,
                             bool cpu_visible,
                             struct zhpeq_key_data **qkdata_out)
 {
+    PRINT_DEBUG;
     int                 ret = -EINVAL;
     struct zdom_data    *bdom = zdom->backend_data;
     const struct key_data_packed *pdata = blob;
@@ -1356,6 +1396,7 @@ static int lfab_zmmu_import(struct zhpeq_dom *zdom, int open_idx,
 
 static int lfab_zmmu_free(struct zhpeq_dom *zdom, struct zhpeq_key_data *qkdata)
 {
+    PRINT_DEBUG;
     int                 ret = -EINVAL;
     struct zdom_data    *bdom = zdom->backend_data;
     struct zhpeq_mr_desc_v1 *desc = container_of(qkdata,
@@ -1379,6 +1420,7 @@ static int lfab_zmmu_export(struct zhpeq_dom *zdom,
                             const struct zhpeq_key_data *qkdata,
                             void *blob, size_t *blob_len)
 {
+    PRINT_DEBUG;
     int                 ret = -EOVERFLOW;
     struct zdom_data    *bdom = zdom->backend_data;
 
@@ -1397,6 +1439,7 @@ static int lfab_zmmu_export(struct zhpeq_dom *zdom,
 
 static void lfab_print_info(struct zhpeq *zq)
 {
+    PRINT_DEBUG;
     struct fab_conn     *fab_conn = NULL;
     struct stuff        *conn;
 
@@ -1410,6 +1453,7 @@ static void lfab_print_info(struct zhpeq *zq)
 static bool worker_fi_getname(struct zhpeu_work_head *head,
                               struct zhpeu_work *work)
 {
+    PRINT_DEBUG;
     struct lfab_work_fi_getname *data = work->data;
 
     work->status = fi_getname(data->fid, data->buf, data->len_inout);
@@ -1419,6 +1463,7 @@ static bool worker_fi_getname(struct zhpeu_work_head *head,
 
 static int lfab_getaddr(struct zhpeq *zq, void *sa, size_t *sa_len)
 {
+    PRINT_DEBUG;
     int                 ret;
     struct stuff        *conn = zq->backend_data;
     struct fab_conn     *fab_conn = conn->fab_plus->fab_conn;
@@ -1441,6 +1486,7 @@ static int lfab_getaddr(struct zhpeq *zq, void *sa, size_t *sa_len)
 }
 
 static struct backend_ops ops = {
+        //TODO: Extend with offloading.
     .lib_init           = lfab_lib_init,
     .domain             = lfab_domain,
     .domain_free        = lfab_domain_free,
@@ -1464,6 +1510,7 @@ static struct backend_ops ops = {
 
 void zhpeq_backend_libfabric_init(int fd)
 {
+    PRINT_DEBUG;
     backend_prov = getenv("ZHPE_OFFLOADED_BACKEND_LIBFABRIC_PROV");
     backend_dom = getenv("ZHPE_OFFLOADED_BACKEND_LIBFABRIC_DOM");
     eng.do_auto = !!getenv("ZHPE_OFFLOADED_BACKEND_LIBFABRIC_AUTO");

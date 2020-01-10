@@ -66,6 +66,8 @@
 
 #include <zhpe_externc.h>
 
+#define PRINT_DEBUG printf("zhpe-support Within function: %s in file %s \n", __func__, __FILE__)
+
 _EXTERN_C_BEG
 
 #ifndef likely

@@ -38,6 +38,9 @@
 
 #include <dlfcn.h>
 #include <limits.h>
+#include <stdio.h>
+
+#define PRINT_DEBUG printf("zhpe-support Within function: %s in file %s \n", __func__, __FILE__)
 
 static_assert(sizeof(union zhpe_offloaded_hw_wq_entry) ==  ZHPE_OFFLOADED_ENTRY_LEN,
               "zhpe_offloaded_hw_wq_entry");
@@ -61,6 +64,7 @@ uuid_t                  zhpeq_uuid;
 static void __attribute__((constructor)) lib_init(void)
 {
     void                *dlhandle = dlopen(BACKNAME, RTLD_NOW);
+    PRINT_DEBUG;
 
     if (!dlhandle) {
         print_err("Failed to load %s:%s\n", BACKNAME, dlerror());
@@ -70,6 +74,7 @@ static void __attribute__((constructor)) lib_init(void)
 
 void zhpeq_register_backend(enum zhpe_offloaded_backend backend, struct backend_ops *ops)
 {
+    PRINT_DEBUG;
     /* For the moment, the zhpe backend will only register if the zhpe device
      * can be opened and the libfabric backend will only register if the zhpe
      * device can't be opened.
@@ -94,6 +99,7 @@ void zhpeq_register_backend(enum zhpe_offloaded_backend backend, struct backend_
 
 int zhpeq_init(int api_version)
 {
+    PRINT_DEBUG;
     int                 ret = -EINVAL;
     static int          init_status = 1;
 
@@ -115,6 +121,7 @@ int zhpeq_init(int api_version)
 
 int zhpeq_query_attr(struct zhpeq_attr *attr)
 {
+    PRINT_DEBUG;
     int                 ret = -EINVAL;
 
     /* Compatibility handling is left for another day. */
@@ -131,6 +138,7 @@ int zhpeq_query_attr(struct zhpeq_attr *attr)
 
 int zhpeq_domain_free(struct zhpeq_dom *zdom)
 {
+    PRINT_DEBUG;
     int                 ret = -EINVAL;
 
     if (!zdom)
@@ -147,6 +155,7 @@ int zhpeq_domain_free(struct zhpeq_dom *zdom)
 
 int zhpeq_domain_alloc(struct zhpeq_dom **zdom_out)
 {
+    PRINT_DEBUG;
     int                 ret = -EINVAL;
     struct zhpeq_dom    *zdom = NULL;
 
@@ -174,6 +183,7 @@ int zhpeq_domain_alloc(struct zhpeq_dom **zdom_out)
 
 int zhpeq_free(struct zhpeq *zq)
 {
+    PRINT_DEBUG;
     int                 ret = -EINVAL;
     int                 rc;
     union xdm_active    active;
@@ -219,6 +229,7 @@ int zhpeq_alloc(struct zhpeq_dom *zdom, int cmd_qlen, int cmp_qlen,
                 int traffic_class, int priority, int slice_mask,
                 struct zhpeq **zq_out)
 {
+    PRINT_DEBUG;
     int                 ret = -EINVAL;
     struct zhpeq        *zq = NULL;
     union xdm_cmp_tail  tail = {
@@ -305,6 +316,7 @@ int zhpeq_alloc(struct zhpeq_dom *zdom, int cmd_qlen, int cmp_qlen,
 int zhpeq_backend_exchange(struct zhpeq *zq, int sock_fd,
                            void *sa, size_t *sa_len)
 {
+    PRINT_DEBUG;
     int                 ret = -EINVAL;
 
     if (!zq || !sa || !sa_len)
@@ -318,6 +330,7 @@ int zhpeq_backend_exchange(struct zhpeq *zq, int sock_fd,
 
 int zhpeq_backend_open(struct zhpeq *zq, void *sa)
 {
+    PRINT_DEBUG;
     int                 ret = -EINVAL;
 
     if (!zq)
@@ -331,6 +344,7 @@ int zhpeq_backend_open(struct zhpeq *zq, void *sa)
 
 int zhpeq_backend_close(struct zhpeq *zq, int open_idx)
 {
+    PRINT_DEBUG;
     int                 ret = -EINVAL;
 
     if (!zq)
@@ -344,6 +358,7 @@ int zhpeq_backend_close(struct zhpeq *zq, int open_idx)
 
 int64_t zhpeq_reserve(struct zhpeq *zq, uint32_t n_entries)
 {
+    PRINT_DEBUG;
     int64_t             ret = -EINVAL;
     uint32_t            qmask;
     uint32_t            avail;
@@ -376,6 +391,7 @@ int64_t zhpeq_reserve(struct zhpeq *zq, uint32_t n_entries)
 
 int zhpeq_commit(struct zhpeq *zq, uint32_t qindex, uint32_t n_entries)
 {
+    PRINT_DEBUG;
     int                 ret = -EINVAL;
     uint32_t            qmask;
     uint32_t            old;
@@ -419,12 +435,14 @@ int zhpeq_commit(struct zhpeq *zq, uint32_t qindex, uint32_t n_entries)
 
 int zhpeq_signal(struct zhpeq *zq)
 {
+    PRINT_DEBUG;
     return b_ops->wq_signal(zq);
 }
 
 static inline void set_context(struct zhpeq *zq, union zhpe_offloaded_hw_wq_entry *wqe,
                                void *context)
 {
+    PRINT_DEBUG;
     struct free_index   old;
     struct free_index   new;
 
@@ -446,6 +464,7 @@ static inline void set_context(struct zhpeq *zq, union zhpe_offloaded_hw_wq_entr
 
 static inline void *get_context(struct zhpeq *zq, struct zhpe_offloaded_cq_entry *cqe)
 {
+    PRINT_DEBUG;
     void                *ret = zq->context[cqe->index];
     struct free_index   old;
     struct free_index   new;
@@ -464,6 +483,7 @@ static inline void *get_context(struct zhpeq *zq, struct zhpe_offloaded_cq_entry
 int zhpeq_nop(struct zhpeq *zq, uint32_t qindex, bool fence,
               void *context)
 {
+    PRINT_DEBUG;
     int                 ret = -EINVAL;
     union zhpe_offloaded_hw_wq_entry *wqe;
 
@@ -488,6 +508,7 @@ static inline int zhpeq_rw(struct zhpeq *zq, uint32_t qindex, bool fence,
                            uint64_t rd_addr, size_t len, uint64_t wr_addr,
                            void *context, uint16_t opcode)
 {
+    PRINT_DEBUG;
     int                 ret = -EINVAL;
     union zhpe_offloaded_hw_wq_entry *wqe;
 
@@ -515,6 +536,7 @@ int zhpeq_put(struct zhpeq *zq, uint32_t qindex, bool fence,
               uint64_t lcl_addr, size_t len, uint64_t rem_addr,
               void *context)
 {
+    PRINT_DEBUG;
     return zhpeq_rw(zq, qindex, fence, lcl_addr, len, rem_addr, context,
                     ZHPE_OFFLOADED_HW_OPCODE_PUT);
 }
@@ -523,6 +545,7 @@ int zhpeq_puti(struct zhpeq *zq, uint32_t qindex, bool fence,
                const void *buf, size_t len, uint64_t remote_addr,
                void *context)
 {
+    PRINT_DEBUG;
     int                 ret = -EINVAL;
     union zhpe_offloaded_hw_wq_entry *wqe;
 
@@ -551,6 +574,7 @@ int zhpeq_get(struct zhpeq *zq, uint32_t qindex, bool fence,
               uint64_t lcl_addr, size_t len, uint64_t rem_addr,
               void *context)
 {
+    PRINT_DEBUG;
     return zhpeq_rw(zq, qindex, fence, rem_addr, len, lcl_addr, context,
                     ZHPE_OFFLOADED_HW_OPCODE_GET);
 }
@@ -558,6 +582,7 @@ int zhpeq_get(struct zhpeq *zq, uint32_t qindex, bool fence,
 int zhpeq_geti(struct zhpeq *zq, uint32_t qindex, bool fence,
                size_t len, uint64_t remote_addr, void *context)
 {
+    PRINT_DEBUG;
     int                 ret = -EINVAL;
     union zhpe_offloaded_hw_wq_entry *wqe;
 
@@ -585,6 +610,7 @@ int zhpeq_atomic(struct zhpeq *zq, uint32_t qindex, bool fence, bool retval,
                  uint64_t remote_addr, const union zhpeq_atomic *operands,
                  void *context)
 {
+    PRINT_DEBUG;
     int                 ret = -EINVAL;
     union zhpe_offloaded_hw_wq_entry *wqe;
     size_t              n_operands;
@@ -651,6 +677,7 @@ int zhpeq_atomic(struct zhpeq *zq, uint32_t qindex, bool fence, bool retval,
 int zhpeq_mr_reg(struct zhpeq_dom *zdom, const void *buf, size_t len,
                  uint32_t access, struct zhpeq_key_data **qkdata_out)
 {
+    PRINT_DEBUG;
     zhpe_offloaded_stats_start(zhpe_offloaded_stats_subid(ZHPQ, 0));
 
     int                 ret = -EINVAL;
@@ -675,6 +702,7 @@ int zhpeq_mr_reg(struct zhpeq_dom *zdom, const void *buf, size_t len,
 
 int zhpeq_mr_free(struct zhpeq_dom *zdom, struct zhpeq_key_data *qkdata)
 {
+    PRINT_DEBUG;
     zhpe_offloaded_stats_start(zhpe_offloaded_stats_subid(ZHPQ, 10));
 
     int                 ret = 0;
@@ -700,6 +728,7 @@ int zhpeq_zmmu_import(struct zhpeq_dom *zdom, int open_idx, const void *blob,
                       size_t blob_len, bool cpu_visible,
                       struct zhpeq_key_data **qkdata_out)
 {
+    PRINT_DEBUG;
     zhpe_offloaded_stats_start(zhpe_offloaded_stats_subid(ZHPQ, 40));
 
     int                 ret = -EINVAL;
@@ -726,6 +755,7 @@ int zhpeq_zmmu_import(struct zhpeq_dom *zdom, int open_idx, const void *blob,
 int zhpeq_zmmu_fam_import(struct zhpeq_dom *zdom, int open_idx,
                           bool cpu_visible, struct zhpeq_key_data **qkdata_out)
 {
+    PRINT_DEBUG;
     int                 ret = -EINVAL;
 
     zhpe_offloaded_stats_start(zhpe_offloaded_stats_subid(ZHPQ, 20));
@@ -756,6 +786,7 @@ int zhpeq_zmmu_export(struct zhpeq_dom *zdom,
                       const struct zhpeq_key_data *qkdata,
                       void *blob, size_t *blob_len)
 {
+    PRINT_DEBUG;
     zhpe_offloaded_stats_start(zhpe_offloaded_stats_subid(ZHPQ, 30));
 
     int                 ret = -EINVAL;
@@ -780,6 +811,7 @@ int zhpeq_zmmu_export(struct zhpeq_dom *zdom,
 
 int zhpeq_zmmu_free(struct zhpeq_dom *zdom, struct zhpeq_key_data *qkdata)
 {
+    PRINT_DEBUG;
     int                 ret = 0;
 
     zhpe_offloaded_stats_start(zhpe_offloaded_stats_subid(ZHPQ, 50));
@@ -804,6 +836,7 @@ int zhpeq_zmmu_free(struct zhpeq_dom *zdom, struct zhpeq_key_data *qkdata)
 ssize_t zhpeq_cq_read(struct zhpeq *zq, struct zhpeq_cq_entry *entries,
                       size_t n_entries)
 {
+    PRINT_DEBUG;
     ssize_t             ret = -EINVAL;
     bool                polled = false;
     union zhpe_offloaded_hw_cq_entry *cqe;
@@ -850,6 +883,7 @@ ssize_t zhpeq_cq_read(struct zhpeq *zq, struct zhpeq_cq_entry *entries,
 
 void zhpeq_print_info(struct zhpeq *zq)
 {
+    PRINT_DEBUG;
     const char          *b_str = "unknown";
     struct zhpe_offloaded_attr    *attr = &b_attr.z;
 
@@ -883,11 +917,13 @@ void zhpeq_print_info(struct zhpeq *zq)
 
 struct zhpeq_dom *zhpeq_dom(struct zhpeq *zq)
 {
+    PRINT_DEBUG;
     return zq->zdom;
 }
 
 int zhpeq_getaddr(struct zhpeq *zq, void *sa, size_t *sa_len)
 {
+    PRINT_DEBUG;
     ssize_t             ret = -EINVAL;
 
     if (!zq || !sa || !sa_len)
@@ -902,6 +938,7 @@ int zhpeq_getaddr(struct zhpeq *zq, void *sa, size_t *sa_len)
 void zhpeq_print_qkdata(const char *func, uint line, struct zhpeq_dom *zdom,
                         const struct zhpeq_key_data *qkdata)
 {
+    PRINT_DEBUG;
     char                *id_str = NULL;
 
     if (b_ops->qkdata_id_str)
@@ -917,12 +954,14 @@ void zhpeq_print_qkdata(const char *func, uint line, struct zhpeq_dom *zdom,
 static void print_qcm1(const char *func, uint line, const volatile void *qcm,
                       uint offset)
 {
+    PRINT_DEBUG;
     printf("%s,%u:qcm[0x%03x] = 0x%lx\n",
            func, line, offset, ioread64(qcm + offset));
 }
 
 void zhpeq_print_qcm(const char *func, uint line, const struct zhpeq *zq)
 {
+    PRINT_DEBUG;
     uint                i;
 
     printf("%s,%u:%s %p\n", func, line, __func__, zq->qcm);
@@ -934,5 +973,6 @@ void zhpeq_print_qcm(const char *func, uint line, const struct zhpeq *zq)
 
 bool zhpeq_is_asic(void)
 {
+    PRINT_DEBUG;
     return b_zhpe;
 }

@@ -41,6 +41,7 @@
 
 void fab_dom_init(struct fab_dom *dom)
 {
+    PRINT_DEBUG;
     memset(dom, 0, sizeof(*dom));
     dom->av_mutex = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
     atm_inc(&dom->use_count);
@@ -48,12 +49,14 @@ void fab_dom_init(struct fab_dom *dom)
 
 static void onfree_dom(struct fab_dom *dom, void *data)
 {
+    PRINT_DEBUG;
     free(dom);
 }
 
 struct fab_dom *_fab_dom_alloc(void (*onfree)(struct fab_dom *dom, void *data),
                                void *data, const char *callf, uint line)
 {
+    PRINT_DEBUG;
     struct fab_dom      *ret;
 
     ret = zhpeu_malloc_aligned(L1_CACHE_BYTES, sizeof(*ret), callf, line);
@@ -71,6 +74,7 @@ struct fab_dom *_fab_dom_alloc(void (*onfree)(struct fab_dom *dom, void *data),
 
 void fab_conn_init(struct fab_dom *dom, struct fab_conn *conn)
 {
+    PRINT_DEBUG;
     memset(conn, 0, sizeof(*conn));
     conn->dom = dom;
     atm_inc(&dom->use_count);
@@ -79,6 +83,7 @@ void fab_conn_init(struct fab_dom *dom, struct fab_conn *conn)
 
 static void onfree_conn(struct fab_conn *conn, void *data)
 {
+    PRINT_DEBUG;
     free(conn);
 }
 
@@ -87,6 +92,7 @@ struct fab_conn *_fab_conn_alloc(struct fab_dom *dom,
                                                 void *data),
                                  void *data, const char *callf, uint line)
 {
+    PRINT_DEBUG;
     struct fab_conn     *ret;
 
     ret = zhpeu_malloc_aligned(L1_CACHE_BYTES, sizeof(*ret), callf, line);
@@ -104,10 +110,12 @@ struct fab_conn *_fab_conn_alloc(struct fab_dom *dom,
 
 static void dummy_free(void *key)
 {
+    PRINT_DEBUG;
 }
 
 void fab_finfo_free(struct fab_info *finfo)
 {
+    PRINT_DEBUG;
     FREE_IF(finfo->info, fi_freeinfo);
     FREE_IF(finfo->hints, fi_freeinfo);
     free(finfo->service);
@@ -116,6 +124,7 @@ void fab_finfo_free(struct fab_info *finfo)
 
 int fab_dom_free(struct fab_dom *dom)
 {
+    PRINT_DEBUG;
     int                 ret = 0;
     int32_t             use_count;
     int                 rc;
@@ -147,6 +156,7 @@ int fab_dom_free(struct fab_dom *dom)
 
 int fab_conn_free(struct fab_conn *conn)
 {
+    PRINT_DEBUG;
     int                 ret = 0;
     int32_t             use_count;
     int                 rc;
@@ -187,6 +197,7 @@ static int finfo_init(const char *callf, uint line,
                       enum fi_ep_type ep_type, struct fi_info *hints,
                       struct fab_info *finfo)
 {
+    PRINT_DEBUG;
     int                 ret = -FI_ENOMEM;
 
     memset(finfo, 0, sizeof(*finfo));
@@ -235,6 +246,7 @@ static int finfo_init(const char *callf, uint line,
 
 static int finfo_getinfo(const char *callf, uint line, struct fab_info *finfo)
 {
+    PRINT_DEBUG;
     int                 ret;
     struct fi_info      *info;
 
@@ -282,6 +294,7 @@ int _fab_dom_setup(const char *callf, uint line,
                    const char *provider, const char *domain,
                    enum fi_ep_type ep_type, struct fab_dom *dom)
 {
+    PRINT_DEBUG;
     int                 ret;
     struct fi_av_attr   av_attr = { .type = FI_AV_TABLE };
 
@@ -332,6 +345,7 @@ int _fab_dom_getinfo(const char *callf, uint line,
                      const char *service, const char *node, bool passive,
                      struct fab_dom *dom, struct fab_info *finfo)
 {
+    PRINT_DEBUG;
     int                 ret;
 
     ret = finfo_init(callf, line, service, node, passive, NULL, NULL, 0,
@@ -347,6 +361,7 @@ int _fab_dom_getinfo(const char *callf, uint line,
 int _fab_listener_setup(const char *callf, uint line, int backlog,
                         struct fab_conn *listener)
 {
+    PRINT_DEBUG;
     int                 ret;
     struct fi_info      *info = fab_conn_info(listener);
     struct fi_eq_attr   eq_attr = { .wait_obj = FI_WAIT_UNSPEC };
@@ -392,6 +407,7 @@ int _fab_listener_wait_and_accept(const char *callf, uint line,
                                   size_t tx_size, size_t rx_size,
                                   struct fab_conn *conn)
 {
+    PRINT_DEBUG;
     int                 ret = 0;
     struct fi_eq_cm_entry entry;
 
@@ -425,6 +441,7 @@ int _fab_listener_wait_and_accept(const char *callf, uint line,
 int _fab_connect(const char *callf, uint line, int timeout,
                  size_t tx_size, size_t rx_size, struct fab_conn *conn)
 {
+    PRINT_DEBUG;
     int                 ret;
     struct fi_info      *info = fab_conn_info(conn);
     struct fi_eq_attr   eq_attr = { .wait_obj = FI_WAIT_UNSPEC };
@@ -461,6 +478,7 @@ int _fab_ep_setup(const char *callf, uint line,
                   struct fab_conn *conn, struct fid_eq *eq,
                   size_t tx_size, size_t rx_size)
 {
+    PRINT_DEBUG;
     int                 ret;
     struct fi_info      *info = fab_conn_info(conn);
     struct fi_cq_attr   tx_cq_attr =  {
@@ -532,6 +550,7 @@ int _fab_eq_cm_event(const char *callf, uint line,
                      struct fab_conn *conn, int timeout, uint32_t expected,
                      struct fi_eq_cm_entry *entry)
 {
+    PRINT_DEBUG;
     ssize_t             ret;
     struct fi_eq_err_entry fi_eq_err;
     uint32_t            event;
@@ -570,6 +589,7 @@ int _fab_mrmem_alloc(const char *callf, uint line,
                      struct fab_conn *conn, struct fab_mrmem *mrmem,
                      size_t len, uint64_t access)
 {
+    PRINT_DEBUG;
     int                 ret = 0;
 
     ret = -posix_memalign(&mrmem->mem, page_size, len);
@@ -596,6 +616,7 @@ int _fab_mrmem_alloc(const char *callf, uint line,
 
 int fab_mrmem_free(struct fab_mrmem *mrmem)
 {
+    PRINT_DEBUG;
     int                 ret = 0;
 
     if (!mrmem)
@@ -613,6 +634,7 @@ ssize_t _fab_completions(const char *callf, uint line,
                          void (*cq_update)(void *arg, void *cqe, bool err),
                          void *arg)
 {
+    PRINT_DEBUG;
     ssize_t             ret = 0;
     ssize_t             rc;
     ssize_t             len;
@@ -662,6 +684,7 @@ ssize_t _fab_completions(const char *callf, uint line,
 
 void fab_print_info(struct fab_conn *conn)
 {
+    PRINT_DEBUG;
     int                 rc;
     struct fab_dom      dom;
     struct fab_info     finfo = { NULL };
@@ -697,6 +720,7 @@ void fab_print_info(struct fab_conn *conn)
 int _fab_av_ep(const char *callf, uint line, struct fab_conn *conn,
                size_t tx_size, size_t rx_size)
 {
+    PRINT_DEBUG;
     return _fab_ep_setup(callf, line, conn, NULL, tx_size, rx_size);
 }
 
@@ -705,6 +729,7 @@ int _fab_cq_sread(const char *callf, uint line,
                   size_t count, void *cond, int timeout,
                   struct fi_cq_err_entry *fi_cqerr)
 {
+    PRINT_DEBUG;
     ssize_t             ret = 0;
     int                 rc;
     struct fi_cq_err_entry err_entry;
@@ -747,6 +772,7 @@ int _fab_cq_read(const char *callf, uint line,
                  struct fid_cq *cq, struct fi_cq_tagged_entry *fi_cqe,
                  size_t count, struct fi_cq_err_entry *fi_cqerr)
 {
+    PRINT_DEBUG;
     ssize_t             ret = 0;
     int                 rc;
     struct fi_cq_err_entry err_entry;
@@ -788,6 +814,7 @@ int _fab_cq_read(const char *callf, uint line,
 int _fab_av_xchg_addr(const char *callf, uint line, struct fab_conn *conn,
                       int sock_fd, union sockaddr_in46 *ep_addr)
 {
+    PRINT_DEBUG;
     int                 ret;
     size_t              addr_len = sizeof(*ep_addr);
     in_port_t           save_port;
@@ -829,6 +856,7 @@ struct xchg_retry_args {
 
 static int xchg_retry(void *vargs)
 {
+    PRINT_DEBUG;
     struct xchg_retry_args *args = vargs;
     struct timespec     ts_cur;
 
@@ -845,6 +873,7 @@ static int xchg_retry(void *vargs)
 int _fab_av_xchg(const char *callf, uint line, struct fab_conn *conn,
                  int sock_fd, int timeout, fi_addr_t *fi_addr)
 {
+    PRINT_DEBUG;
     int                 ret;
     bool                fi_addr_valid = false;
     int                 (*retry)(void *args) = xchg_retry;
@@ -890,11 +919,13 @@ struct av_tree_entry {
 
 static int compare_sa(const void *key1, const void *key2)
 {
+    PRINT_DEBUG;
     return sockaddr_cmp(key1, key2);
 }
 
 static int compare_fi(const void *key1, const void *key2)
 {
+    PRINT_DEBUG;
     fi_addr_t           fi_addr1 = *(const fi_addr_t *)key1;
     fi_addr_t           fi_addr2 = *(const fi_addr_t *)key2;
 
@@ -904,6 +935,7 @@ static int compare_fi(const void *key1, const void *key2)
 int _fab_av_insert(const char *callf, uint line, struct fab_dom *dom,
                    union sockaddr_in46 *saddr, fi_addr_t *fi_addr)
 {
+    PRINT_DEBUG;
     int                 ret;
     struct av_tree_entry *ave = NULL;
     void                **tval = NULL;
@@ -973,6 +1005,7 @@ int _fab_av_insert(const char *callf, uint line, struct fab_dom *dom,
 int _fab_av_remove(const char *callf, uint line, struct fab_dom *dom,
                    fi_addr_t fi_addr)
 {
+    PRINT_DEBUG;
     int                 ret;
     struct av_tree_entry *ave;
     void                **tval;
@@ -1006,6 +1039,7 @@ int _fab_av_wait_send(const char *callf, uint line, struct fab_conn *conn,
                       fi_addr_t fi_addr,
                       int (*retry)(void *retry_arg), void *retry_arg)
 {
+    PRINT_DEBUG;
     int                 ret;
 
     /* Do zero length fi_inject until it stops returning FI_EAGAIN. */
@@ -1033,6 +1067,7 @@ int _fab_av_wait_recv(const char *callf, uint line, struct fab_conn *conn,
                       fi_addr_t fi_addr,
                       int (*retry)(void *retry_arg), void *retry_arg)
 {
+    PRINT_DEBUG;
     int                 ret;
     struct fi_context2  fi_ctxt;
     struct fi_msg_tagged fi_tmsg = {

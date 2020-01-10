@@ -58,6 +58,7 @@ static struct zhpeu_atm_list_ptr atm_dummy;
 
 static void __attribute__((constructor)) lib_init(void)
 {
+    PRINT_DEBUG;
     long                rcl;
     struct zhpeu_atm_list_ptr oldh;
     struct zhpeu_atm_list_ptr newh;
@@ -91,6 +92,7 @@ static void __attribute__((constructor)) lib_init(void)
 
 void zhpeq_util_init(char *argv0, int default_log_level, bool use_syslog)
 {
+    PRINT_DEBUG;
     /* Allow to be called multiple times for testing. */
     appname = basename(argv0);
     log_level  = default_log_level;
@@ -104,6 +106,7 @@ void zhpeq_util_init(char *argv0, int default_log_level, bool use_syslog)
 static void vlog(int priority, FILE *file, const char *prefix,
                  const char *fmt, va_list ap)
 {
+    PRINT_DEBUG;
     if (priority > log_level)
         return;
 
@@ -120,6 +123,7 @@ static void vlog(int priority, FILE *file, const char *prefix,
 
 void print_dbg(const char *fmt, ...)
 {
+    PRINT_DEBUG;
     va_list             ap;
 
     va_start(ap, fmt);
@@ -129,6 +133,7 @@ void print_dbg(const char *fmt, ...)
 
 void print_info(const char *fmt, ...)
 {
+    PRINT_DEBUG;
     va_list             ap;
 
     va_start(ap, fmt);
@@ -138,6 +143,7 @@ void print_info(const char *fmt, ...)
 
 void print_err(const char *fmt, ...)
 {
+    PRINT_DEBUG;
     va_list             ap;
 
     va_start(ap, fmt);
@@ -147,6 +153,7 @@ void print_err(const char *fmt, ...)
 
 void print_usage(bool use_stdout, const char *fmt, ...)
 {
+    PRINT_DEBUG;
     va_list             ap;
 
     va_start(ap, fmt);
@@ -157,6 +164,7 @@ void print_usage(bool use_stdout, const char *fmt, ...)
 void print_errs(const char *callf, uint line, char *errf_str,
                 int err, const char *errs)
 {
+    PRINT_DEBUG;
     if (errf_str == (void *)(intptr_t)-1)
         print_err("%s,%u:fatal error, out of memory?\n", callf, line);
     else {
@@ -168,6 +176,7 @@ void print_errs(const char *callf, uint line, char *errf_str,
 
 char *errf_str(const char *fmt, ...)
 {
+    PRINT_DEBUG;
     char                *ret = NULL;
     va_list             ap;
 
@@ -182,6 +191,7 @@ char *errf_str(const char *fmt, ...)
 void print_func_err(const char *callf, uint line, const char *errf,
                     const char *arg, int err)
 {
+    PRINT_DEBUG;
     char                *estr = NULL;
 
     if (errf)
@@ -195,6 +205,7 @@ void print_func_err(const char *callf, uint line, const char *errf,
 void print_func_errn(const char *callf, uint line, const char *errf,
                      llong arg, bool arg_hex, int err)
 {
+    PRINT_DEBUG;
     char                *estr = NULL;
 
     if (errf)
@@ -208,6 +219,7 @@ void print_func_errn(const char *callf, uint line, const char *errf,
 void print_range_err(const char *callf, uint line, const char *name,
                      int64_t val, int64_t min, int64_t max)
 {
+    PRINT_DEBUG;
     print_err("%s,%u:%s = %Ld: out of range %Ld - %Ld\n",
               callf, line, name, (llong)val, (llong)min, (llong)max);
 }
@@ -215,6 +227,7 @@ void print_range_err(const char *callf, uint line, const char *name,
 void print_urange_err(const char *callf, uint line, const char *name,
                       uint64_t val, uint64_t min, uint64_t max)
 {
+    PRINT_DEBUG;
     print_err("%s,%u:%s = %Lu: out of range %Lu - %Lu\n",
               callf, line, name, (ullong)val, (ullong)min, (ullong)max);
 }
@@ -224,6 +237,7 @@ static const char *cpuinfo_delim = " \t\n";
 char *get_cpuinfo_val(FILE *fp, char *buf, size_t buf_size,
                       uint field, const char *name, ...)
 {
+    PRINT_DEBUG;
     char                *ret = NULL;
     bool                first = true;
     char                *tok;
@@ -277,6 +291,7 @@ char *get_cpuinfo_val(FILE *fp, char *buf, size_t buf_size,
 
 static uint64_t __get_tsc_freq(void)
 {
+    PRINT_DEBUG;
     uint64_t            ret = 0;
     FILE                *fp = NULL;
     const char          *fname_info = "/proc/cpuinfo";
@@ -402,6 +417,7 @@ done:
 
 static uint64_t get_tsc_cycles(volatile uint32_t *cpup)
 {
+    PRINT_DEBUG;
     uint32_t            lo;
     uint32_t            hi;
     uint32_t            cpu;
@@ -416,6 +432,7 @@ static uint64_t get_tsc_cycles(volatile uint32_t *cpup)
 
 static uint64_t get_clock_cycles(volatile uint32_t *cpup)
 {
+    PRINT_DEBUG;
     struct timespec     now;
 
     /* CPU not supported. */
@@ -431,6 +448,7 @@ int parse_kb_uint64_t(const char *callf, uint line,
                       const char *name, const char *sp, uint64_t *val,
                       int base, uint64_t min, uint64_t max, int flags)
 {
+    PRINT_DEBUG;
     int                 ret = -EINVAL;
     char                *ep;
 
@@ -516,6 +534,7 @@ int parse_kb_uint64_t(const char *callf, uint line,
 int check_func_io(const char *callf, uint line, const char *errf,
                   const char *arg, size_t req, ssize_t res, int flags)
 {
+    PRINT_DEBUG;
     int                 ret = 0;
 
     if (res == -1) {
@@ -538,6 +557,7 @@ int check_func_io(const char *callf, uint line, const char *errf,
 int check_func_ion(const char *callf, uint line, const char *errf,
                    long arg, bool arg_hex, size_t req, ssize_t res, int flags)
 {
+    PRINT_DEBUG;
     int                 ret = 0;
 
     if (res == -1) {
@@ -624,6 +644,7 @@ int do_getaddrinfo(const char *node, const char *service,
 
 int connect_sock(const char *node, const char *service)
 {
+    PRINT_DEBUG;
     int                 ret;
     struct addrinfo     *resp = NULL;
 
@@ -650,12 +671,14 @@ done:
 
 void random_seed(uint seed)
 {
+    PRINT_DEBUG;
     srandom(seed);
 }
 
 /* [start, end] */
 uint random_range(uint start, uint end)
 {
+    PRINT_DEBUG;
     const uint64_t      rand_max = (uint64_t)RAND_MAX + 1;
     uint64_t            range;
 
@@ -669,6 +692,7 @@ uint random_range(uint start, uint end)
 
 uint *random_array(uint *array, uint entries)
 {
+    PRINT_DEBUG;
     uint                *ret = array;
     size_t              i;
     size_t              t;
@@ -691,6 +715,7 @@ uint *random_array(uint *array, uint entries)
 bool _expected_saw(const char *callf, uint line,
                    const char *label, uintptr_t expected, uintptr_t saw)
 {
+    PRINT_DEBUG;
     if (expected == saw)
         return true;
 
@@ -702,6 +727,7 @@ bool _expected_saw(const char *callf, uint line,
 
 char *_sockaddr_port_str(const char *callf, uint line, const void *addr)
 {
+    PRINT_DEBUG;
     char                *ret = NULL;
     const union sockaddr_in46 *sa = addr;
 
@@ -721,6 +747,7 @@ char *_sockaddr_port_str(const char *callf, uint line, const void *addr)
 
 char *_sockaddr_str(const char *callf, uint line, const void *addr)
 {
+    PRINT_DEBUG;
     char                *ret = NULL;
     const char          ipv6_dual_pre[] = "::ffff:";
     const size_t        ipv6_dual_pre_len = sizeof(ipv6_dual_pre) - 1;
@@ -748,6 +775,7 @@ done:
 int _do_getsockname(const char *callf, uint line,
                     int sock_fd, union sockaddr_in46 *sa)
 {
+    PRINT_DEBUG;
     int                 ret = 0;
     socklen_t           addr_len;
 
@@ -765,6 +793,7 @@ int _do_getsockname(const char *callf, uint line,
 int _do_getpeername(const char *callf, uint line,
                     int sock_fd, union sockaddr_in46 *sa)
 {
+    PRINT_DEBUG;
     int                 ret = 0;
     socklen_t           addr_len;
 
@@ -782,6 +811,7 @@ int _do_getpeername(const char *callf, uint line,
 int _sock_send_blob(const char *callf, uint line, int fd,
                     const void *blob, size_t blob_len)
 {
+    PRINT_DEBUG;
     int                 ret = -EINVAL;
     uint32_t            wlen = blob_len;
     size_t              req;
@@ -811,6 +841,7 @@ int _sock_send_blob(const char *callf, uint line, int fd,
 int _sock_recv_fixed_blob(const char *callf, uint line,
                           int sock_fd, void *blob, size_t blob_len)
 {
+    PRINT_DEBUG;
     int                 ret;
     uint32_t            wlen;
     size_t              req;
@@ -841,6 +872,7 @@ int _sock_recv_var_blob(const char *callf, uint line,
                         int sock_fd, size_t extra_len,
                         void **blob, size_t *blob_len)
 {
+    PRINT_DEBUG;
     int                 ret;
     uint32_t            wlen;
     size_t              req;
@@ -880,6 +912,7 @@ int _sock_recv_var_blob(const char *callf, uint line,
 
 const char *sockaddr_ntop(const void *addr, char *buf, size_t len)
 {
+    PRINT_DEBUG;
     const char          *ret = NULL;
     const union sockaddr_in46 *sa = addr;
 
@@ -922,6 +955,7 @@ const char *sockaddr_ntop(const void *addr, char *buf, size_t len)
 int sockaddr_cmpx(const union sockaddr_in46 *sa1,
                   const union sockaddr_in46 *sa2, bool noport)
 {
+    PRINT_DEBUG;
     int                 ret;
     union sockaddr_in46 local1;
     union sockaddr_in46 local2;
@@ -978,6 +1012,7 @@ int sockaddr_cmpx(const union sockaddr_in46 *sa1,
 
 int zhpeu_asprintf(char **strp, const char *fmt, ...)
 {
+    PRINT_DEBUG;
     int                 ret;
     va_list             ap;
 
@@ -995,6 +1030,7 @@ int zhpeu_asprintf(char **strp, const char *fmt, ...)
 int zhpeu_posix_memalign(void **memptr, size_t alignment, size_t size,
                          const char *callf, uint line)
 {
+    PRINT_DEBUG;
     int                 ret = posix_memalign(memptr, alignment, size);
 
     if (unlikely(ret)) {
@@ -1009,6 +1045,7 @@ int zhpeu_posix_memalign(void **memptr, size_t alignment, size_t size,
 
 void *zhpeu_malloc(size_t size, const char *callf, uint line)
 {
+    PRINT_DEBUG;
     void                *ret = malloc(size);
     int                 save_err;
 
@@ -1025,6 +1062,7 @@ void *zhpeu_malloc(size_t size, const char *callf, uint line)
 
 void *zhpeu_realloc(void *ptr, size_t size, const char *callf, uint line)
 {
+    PRINT_DEBUG;
     void                *ret = realloc(ptr, size);
     int                 save_err;
 
@@ -1041,6 +1079,7 @@ void *zhpeu_realloc(void *ptr, size_t size, const char *callf, uint line)
 
 void *zhpeu_calloc(size_t nmemb, size_t size, const char *callf, uint line)
 {
+    PRINT_DEBUG;
     void                *ret = calloc(nmemb, size);
     int                 save_err;
 
@@ -1056,6 +1095,7 @@ void *zhpeu_calloc(size_t nmemb, size_t size, const char *callf, uint line)
 /* For things that want a function pointer to free. */
 void zhpeu_free_ptr(void *ptr)
 {
+    PRINT_DEBUG;
     free(ptr);
 }
 
@@ -1063,6 +1103,7 @@ void zhpeu_free_ptr(void *ptr)
 
 void zhpeu_free(void *ptr, const char *callf, uint line)
 {
+    PRINT_DEBUG;
     /* XXX:Implement alloc/free tracking? */
     free(ptr);
 }
@@ -1070,6 +1111,7 @@ void zhpeu_free(void *ptr, const char *callf, uint line)
 void *zhpeu_malloc_aligned(size_t alignment, size_t size,
                            const char *callf, uint line)
 {
+    PRINT_DEBUG;
     void                *ret;
 
     (void)zhpeu_posix_memalign(&ret, alignment, size, callf, line);
@@ -1080,6 +1122,7 @@ void *zhpeu_malloc_aligned(size_t alignment, size_t size,
 void *zhpeu_calloc_aligned(size_t alignment, size_t nmemb, size_t size,
                            const char *callf, uint line)
 {
+    PRINT_DEBUG;
     void                *ret;
 
     size *= nmemb;
